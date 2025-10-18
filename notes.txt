@@ -1,0 +1,29 @@
+in solverfactory.cs, around line 1000, create constraint objects based on data sent
+
+if no midnight cages specified, send first solution, console log num of solutions with diff cage locations
+if all midnight cages specified, send solution
+bool constraints are global constraints that are on or off (make midnight cells one of those?)
+cells from f-puzzles are in the form {
+    i: num, (vertical idx, counting from 0 like usual grid access)
+    j: num, (horizontal)
+    x: num, (screen x pos)
+    y: num, (screen y pos)
+}
+
+gridX, gridY are coords of tl of grid
+gridSL is grid side length
+
+puzzle.line puzzle.circle etc is for import (exports sets them, import takes all the diff lines and splits to correct areas)
+its faster to do this than go into each individual line part, since then there would be a very long ifloop
+this way we can use the cID optimization
+not important rn, implement import and export for special dots later.
+
+at the very end, make support for actually adding midnight cells to the puzzle, for online solving
+ts very difficult
+maybe even update the solver to put in midnight cells instead of brute forcing at beginning
+
+add bool cell.midnight and bool cell.lockedMidnight
+cell.midnight if cell is midnight
+cell.lockedmidnight if cell is a given midnight
+
+curmidnight should be added to the solver class
