@@ -11,6 +11,7 @@
 // @run-at       document-end
 // ==/UserScript==
 
+// util boolean to make smth fire only once
 let onetime = false;
 (function () {
     // Adding a new constraint:
@@ -260,8 +261,63 @@ let onetime = false;
         },
         // Midnight
         {
+            name: "Given Midnight",
+            type: "midnight",
+            tooltip: [
+                'For all the "midnight" type constraints, cells marked as',
+                "a midnight cell will have a value of 12.",
+                "",
+                "Click on a cell to place a given midnight cell.",
+                "Click on a midnight cell to remove it",
+            ],
+        },
+        {
             name: "Midnight Sum",
             type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight sum constraint",
+                "must have a sum of 12.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a midnight sum constraint.",
+                "Click on a midnight sum constraint to remove it.",
+            ],
+        },
+        {
+            name: "Midnight Product",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight product constraint",
+                "must have a product of 12.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a midnight product constraint.",
+                "Click on a midnight product constraint to remove it.",
+            ],
+        },
+        {
+            name: "Midnight Kropki Sequence",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight Kropki sequence constraint",
+                "must differ by 1.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a Kropki sequence constraint.",
+                "Click on a midnight Kropki sequence constraint to remove it.",
+            ],
+        },
+        {
+            name: "Midnight Kropki Ratio",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight Kropki ratio constraint",
+                "must have a ratio of 1:2.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a Kropki ratio constraint.",
+                "Click on a midnight Kropki ratio constraint to remove it.",
+            ],
         },
     ];
 
@@ -448,10 +504,8 @@ let onetime = false;
         // Additional import/export data
         const origExportPuzzle = exportPuzzle;
         exportPuzzle = function (includeCandidates) {
-            console.log("exporting");
             const compressed = origExportPuzzle(includeCandidates);
             const puzzle = JSON.parse(compressor.decompressFromBase64(compressed));
-            console.log(puzzle, "puzzlelog");
 
             // Add cosmetic version of constraints for those not using the solver plugin
             for (let constraintInfo of newConstraintInfo) {
@@ -534,7 +588,19 @@ let onetime = false;
                         }
                     } else if (constraintInfo.type === "between") {
                         if (!puzzle.dots) puzzle.dots = [];
-                        // to be implemented? seems useless
+                        for (let instance of puzzleEntry) {
+                            puzzle.dots.push({
+                                cells: instance.cells,
+                                type: id,
+                            });
+                        }
+                    } else if (constraintInfo.type === "midnight") {
+                        {
+                            if (!puzzle.midnights) puzzle.midnights = [];
+                            for (let instance of puzzleEntry) {
+                                puzzle.midnights.push(instance);
+                            }
+                        }
                     }
                 }
             }
@@ -669,8 +735,59 @@ let onetime = false;
                 delete puzzle.whispers;
             }
 
+            if (puzzle.dots) {
+                for (let dot of puzzle.dots) {
+                    puzzle[dot.type].push(new window[dot.type](dot.cells));
+                }
+            }
+
             string = compressor.compressToBase64(JSON.stringify(puzzle));
             origImportPuzzle(string, clearHistory);
+
+            if (puzzle.midnights) {
+                for (let midnight of puzzle.midnights) {
+                    grid[parseInt(midnight.cell.charAt(1)) - 1][parseInt(midnight.cell.charAt(3)) - 1].midnight = true;
+                    grid[parseInt(midnight.cell.charAt(1)) - 1][
+                        parseInt(midnight.cell.charAt(3)) - 1
+                    ].lockedmidnight = true;
+                }
+            }
+        };
+
+        // Ensure <= 9 given midnights
+        const origUseTool = useTool;
+        useTool = function (cell) {
+            origUseTool(cell);
+            if (cID(currentTool) === "givenmidnight") {
+                const cons = constraints[cID(currentTool)];
+                if (cons.length > 9) {
+                    cons.pop();
+                    alert("Cannot have more than 9 midnight cells.");
+                    return;
+                }
+                if (cons[cons.length - 1].cell !== cell) {
+                    // This means the last tool use just removed a midnight cell
+                    cell.midnight = false;
+                    cell.lockedmidnight = false;
+                } else {
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[i][cell.j].lockedmidnight || grid[cell.i][i].lockedmidnight) {
+                            cons.pop();
+                            alert("Cannot have multiple midnight cells in the same row/column.");
+                            return;
+                        }
+                    }
+                    for (let ccell of getCellsSeenByRegion(cell)) {
+                        if (ccell.lockedmidnight) {
+                            cons.pop();
+                            alert("Cannot have multiple midnight cells in the same region.");
+                            return;
+                        }
+                    }
+                    cell.midnight = true;
+                    cell.lockedmidnight = true;
+                }
+            }
         };
 
         // Draw the new constraints
@@ -1212,17 +1329,77 @@ let onetime = false;
                 }
             }
 
+            // Given Midnight
+            const constraintsGivenMidnight = constraints[cID("Given Midnight")];
+            if (constraintsGivenMidnight && constraintsGivenMidnight.length > 0) {
+                if (cell.midnight) {
+                    for (let i = 0; i < constraintsGivenMidnight.length; i++)
+                        if (
+                            constraintsGivenMidnight[i].cell !== cell &&
+                            constraintsGivenMidnight[i].cell.value &&
+                            constraintsGivenMidnight[i].cell.value == n
+                        )
+                            return false;
+                }
+            }
+
+            // to be implemented
+
             // Midnight Sum
             const constraintsMidnightSum = constraints[cID("Midnight Sum")];
             if (constraintsMidnightSum && constraintsMidnightSum.length > 0) {
                 for (let midnightSum of constraintsMidnightSum) {
                     let index = midnightSum.cells.indexOf(cell);
+                    if (index == -1) continue;
                     let otherIndex = (index + 1) % 2;
                     const thisValue = cell.midnight ? 12 : n;
                     const otherValue = midnightSum.cells[otherIndex].midnight
                         ? 12
                         : midnightSum.cells[otherIndex].value;
                     if (otherValue && thisValue + otherValue != 12) return false;
+                }
+            }
+
+            const constraintsMidnightProduct = constraints[cID("Midnight Product")];
+            if (constraintsMidnightProduct && constraintsMidnightProduct.length > 0) {
+                for (let midnightProduct of constraintsMidnightProduct) {
+                    let index = midnightProduct.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = midnightProduct.cells[otherIndex].midnight
+                        ? 12
+                        : midnightProduct.cells[otherIndex].value;
+                    if (otherValue && thisValue * otherValue != 12) return false;
+                }
+            }
+
+            const constraintsKropkiSequence = constraints[cID("Midnight Kropki Sequence")];
+            if (constraintsKropkiSequence && constraintsKropkiSequence.length > 0) {
+                for (let kropkiSequence of constraintsKropkiSequence) {
+                    let index = kropkiSequence.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = kropkiSequence.cells[otherIndex].midnight
+                        ? 12
+                        : kropkiSequence.cells[otherIndex].value;
+                    if (otherValue && Math.abs(thisValue - otherValue) != 1) return false;
+                }
+            }
+
+            const constraintsKropkiRatio = constraints[cID("Midnight Kropki Ratio")];
+            if (constraintsKropkiRatio && constraintsKropkiRatio.length > 0) {
+                for (let kropkiRatio of constraintsKropkiRatio) {
+                    let index = kropkiRatio.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = kropkiRatio.cells[otherIndex].midnight
+                        ? 12
+                        : kropkiRatio.cells[otherIndex].value;
+                    if (otherValue && Math.max(thisValue, otherValue) / Math.min(thisValue, otherValue) != 2)
+                        return false;
                 }
             }
 
@@ -1654,11 +1831,28 @@ let onetime = false;
             };
         };
 
-        //Midnight Sum
+        // Midnight Stuff:
 
-        // should be between cell constraint, constructor is called with nearest cells array
+        // Given Midnight
+        window.givenmidnight = function (cell) {
+            if (cell) {
+                this.cell = cell[0];
+            }
+
+            this.show = function () {
+                ctx.lineWidth = lineWT;
+                ctx.fillStyle = "#FFFFFF";
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.fillRect(this.cell.x, this.cell.y, cellSL, cellSL);
+                ctx.fill;
+                ctx.fillStyle = "rgba(85, 31, 233, 0.25)";
+                ctx.strokeStyle = "#000000";
+                ctx.fillRect(this.cell.x, this.cell.y, cellSL, cellSL);
+            };
+        };
+
+        //Midnight Sum
         window.midnightsum = function (nearestCells) {
-            console.log(cell);
             if (nearestCells) {
                 this.cells = nearestCells;
             }
@@ -1676,14 +1870,71 @@ let onetime = false;
                 drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
             };
         };
+
+        // Midnight Product
+        window.midnightproduct = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "x";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
+        // Midnight Kropki Sequence
+        window.midnightkropkisequence = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "s";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
+        // Midnight Kropki Ratio
+        window.midnightkropkiratio = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "r";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
         const origCategorizeTools = categorizeTools;
         categorizeTools = function () {
             origCategorizeTools();
 
-            if (!onetime) {
-                console.log(toolConstraints);
-                onetime = true;
-            }
             let toolLineIndex = toolConstraints.indexOf("Palindrome");
             let toolPerCellIndex = toolConstraints.indexOf("Maximum"); // "Cage" type constraints will go after this group
             let toolOutsideIndex = toolConstraints.indexOf("Sandwich Sum");
@@ -1713,8 +1964,11 @@ let onetime = false;
                     }
                     if (!outsideConstraints.includes(info.name)) outsideConstraints.push(info.name);
                     if (!typableConstraints.includes(info.name)) typableConstraints.push(info.name);
+                } else if (info.type === "midnight") {
+                    if (!toolConstraints.includes(info.name)) toolConstraints.push(info.name);
+                    if (!perCellConstraints.includes(info.name)) perCellConstraints.push(info.name);
                 } else if (info.type === "between") {
-                    // between should only be midnight, so simply insert at the end
+                    // between should only include extra midnight constraints, so simply insert at the end
                     if (!toolConstraints.includes(info.name)) toolConstraints.push(info.name);
                     if (!borderConstraints.includes(info.name)) borderConstraints.push(info.name);
                 }
@@ -1859,7 +2113,8 @@ let onetime = false;
                 const x = gridX - (sidebarDist + sidebarW / 2);
                 const baseX = x + sidebarW;
                 const baseY = gridY + buttonGap;
-                const columnWidth = buttonMargin + buttonW + buttonGap + buttonSH + buttonGap + buttonSH + buttonMargin;
+                const columnWidth =
+                    buttonMargin + buttonW + buttonGap + buttonSH + buttonGap + buttonSH + buttonMargin - 50;
                 let constraintButtons = sidebars[0].buttons;
                 let currentX = baseX;
                 let currentY = gridY + buttonGap;
@@ -1935,7 +2190,6 @@ let onetime = false;
         };
 
         if (window.boolConstraints) {
-            console.log(window.boolConstraints);
             let prevButtons = buttons.splice(0, buttons.length);
             window.onload();
             buttons.splice(0, buttons.length);
