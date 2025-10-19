@@ -27,5 +27,5 @@ public class MidnightSumConstraint : OrthogonalValueConstraint
 
     protected override bool IsPairAllowedAcrossMarker(int markerValue, int v0, int v1) => (v0 + v1 == markerValue);
 
-    protected override int DefaultMarkerValue => 5;
+    protected override int DefaultMarkerValue => 12;
 }

@@ -152,6 +152,7 @@ public partial class Solver
 
             // Try a possible value for this cell
             int val = v != 0 ? v : state.isRandom ? GetRandomValue(solver.board[cellIndex]) : MinValue(solver.board[cellIndex]);
+            // implement midnight cell value check here
 
             // Create a backup board in case it needs to be restored
             Solver newSolver = solver.Clone(willRunNonSinglesLogic: false);
