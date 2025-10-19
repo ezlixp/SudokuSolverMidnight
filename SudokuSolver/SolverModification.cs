@@ -2,6 +2,15 @@ namespace SudokuSolver;
 
 public partial class Solver
 {
+    /// <summary>
+    /// returns true if v can't be in the cell anyways
+    /// updates the cell so that it no longer considers current value
+    /// returns false if that means there is nothign else that can go here
+    /// returns false if there is nothing other than ts to put
+    /// </summary>
+    /// <param name="cellIndex"></param>
+    /// <param name="v"></param>
+    /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ClearValue(int cellIndex, int v)
     {

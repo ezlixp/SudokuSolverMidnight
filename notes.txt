@@ -29,3 +29,8 @@ cell.lockedmidnight if cell is a given midnight
 curmidnight should be added to the solver class
 
 in the future should implement solverfactory to fpuzzles url for the new constraints
+
+for midnight extra constraints, recreate them in each nextMidnight and pass in whether v0 or v1 is always 12
+
+when setting a midnight square, go to all other midnight squares and clear that value using clearvalue or clearcandidate (figure out which one)
+copies are made of original state so its ok

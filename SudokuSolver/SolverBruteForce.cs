@@ -157,13 +157,19 @@ public partial class Solver
             // Create a backup board in case it needs to be restored
             Solver newSolver = solver.Clone(willRunNonSinglesLogic: false);
             newSolver.isBruteForcing = true;
+            // backup board runs (put into the stack) if it is able to continue without the possibility of putting val in ts square
             if (newSolver.ClearValue(cellIndex, val))
-            { 
+            {
                 if (!state.isMultiThreaded || !state.PushSolver(newSolver))
                 {
                     stack.Push(newSolver);
                 }
             }
+
+            // this is where i have to check for midnight and clear values in all the other midnight cells
+            // i don't have to do anything on line 155 actually since if it conflicts it already won't be considered
+            // solver.setvalue fails if setting ts to val contradicts in some way
+            // with the conditions n stuff
 
             // Change the board to only allow this value in the slot
             if (solver.SetValue(cellIndex, val))
