@@ -64,6 +64,7 @@ public static class MidnightCellHelper
 
     public static void Init()
     {
+        curIdx = 0;
         if (initialized) return;
         initialized = true;
         for (int r = 0; r < 9; r++)
