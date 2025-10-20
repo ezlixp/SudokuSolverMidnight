@@ -765,7 +765,7 @@ let onetime = false;
                     alert("Cannot have more than 9 midnight cells.");
                     return;
                 }
-                if (cons[cons.length - 1].cell !== cell) {
+                if (cons.length == 0 || cons[cons.length - 1].cell !== cell) {
                     // This means the last tool use just removed a midnight cell
                     cell.midnight = false;
                     cell.lockedmidnight = false;
