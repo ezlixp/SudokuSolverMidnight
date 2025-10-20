@@ -34,3 +34,5 @@ for midnight extra constraints, recreate them in each nextMidnight and pass in w
 
 when setting a midnight square, go to all other midnight squares and clear that value using clearvalue or clearcandidate (figure out which one)
 copies are made of original state so its ok
+
+midnight cells are a constraint with a group includinga ll of them

@@ -176,7 +176,8 @@ internal class WebsocketListener : IDisposable
                             onlyGivens = true;
                             break;
                     }
-
+                    // loop through starting midnight states here
+                    // in solverfactory create from fpuzzles, initialize midnight boxes constraint with group
                     Solver solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
                     if (message.command == "truecandidates")
                     {
