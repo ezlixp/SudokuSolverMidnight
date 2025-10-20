@@ -11,7 +11,7 @@ public static class MidnightCellHelper
     static bool[] usedBox = new bool[9];
     static int[] choice = new int[9]; // chosen column for each row
     static int num = 0;
-    static int curIdx = 0;
+    public static int curIdx = 0;
 
     static int BoxId(int r, int c)
     {
@@ -57,7 +57,7 @@ public static class MidnightCellHelper
     }
     public static bool NextMidnight()
     {
-        if (curIdx == 46656) return false;
+        if (curIdx == 46655) return false;
         isMidnight = allGrids[++curIdx];
         return true;
     }

@@ -1,38 +1,7 @@
-in solverfactory.cs, around line 1000, create constraint objects based on data sent
-
-if no midnight cages specified, send first solution, console log num of solutions with diff cage locations
-if all midnight cages specified, send solution
-bool constraints are global constraints that are on or off (make midnight cells one of those?)
-cells from f-puzzles are in the form {
-    i: num, (vertical idx, counting from 0 like usual grid access)
-    j: num, (horizontal)
-    x: num, (screen x pos)
-    y: num, (screen y pos)
-}
-
-gridX, gridY are coords of tl of grid
-gridSL is grid side length
-
-puzzle.line puzzle.circle etc is for import (exports sets them, import takes all the diff lines and splits to correct areas)
-its faster to do this than go into each individual line part, since then there would be a very long ifloop
-this way we can use the cID optimization
-not important rn, implement import and export for special dots later.
-
-at the very end, make support for actually adding midnight cells to the puzzle, for online solving
-ts very difficult
-maybe even update the solver to put in midnight cells instead of brute forcing at beginning
-
-add bool cell.midnight and bool cell.lockedMidnight
-cell.midnight if cell is midnight
-cell.lockedmidnight if cell is a given midnight
-
-curmidnight should be added to the solver class
-
 in the future should implement solverfactory to fpuzzles url for the new constraints
 
-for midnight extra constraints, recreate them in each nextMidnight and pass in whether v0 or v1 is always 12
-
-when setting a midnight square, go to all other midnight squares and clear that value using clearvalue or clearcandidate (figure out which one)
-copies are made of original state so its ok
-
-midnight cells are a constraint with a group includinga ll of them
+figure out why it hangs
+possibilities:
+ - memory leak
+ - infinite loop
+print out current midnight cell id with each cur variation has no sols to figure out when hang
