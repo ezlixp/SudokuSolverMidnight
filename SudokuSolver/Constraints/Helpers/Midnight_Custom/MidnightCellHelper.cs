@@ -76,7 +76,6 @@ public static class MidnightCellHelper
         }
 
         Solve(0);
-        Console.Write(num);
         isMidnight = allGrids[0];
     }
 }
