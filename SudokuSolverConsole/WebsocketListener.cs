@@ -205,6 +205,7 @@ internal class WebsocketListener : IDisposable
                             // Console.WriteLine("cur variation has no sols");
                         }
                     } while (MidnightCellHelper.NextMidnight());
+                    Console.WriteLine("Finished searching for solutions with total", count, "midnight cell orientations found.");
 
 
                     // not using this stuff
