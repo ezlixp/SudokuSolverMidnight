@@ -1,4 +1,6 @@
 namespace SudokuSolver.Constraints.Midnight_Custom;
+
+[Constraint(DisplayName = "Midnight Cell", ConsoleName = "midnightcell")]
 public class MidnightCellsConstraint : Constraint
 {
     public readonly List<(int, int)> cells;

@@ -181,66 +181,75 @@ internal class WebsocketListener : IDisposable
                     // in solverfactory create from fpuzzles, initialize midnight boxes constraint with group
                     int count = 0;
                     Solver solver;
+                    MidnightCellHelper.Init();
                     do
                     {
-                        solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
-                        if (solver.FindSolution(multiThread: !singleThreaded, isRandom: true, cancellationToken: cancellationToken))
+                        try
                         {
-                            ++count;
-                            Console.WriteLine("found solution with some midnights");
-                            if (count == 1 && message.command == "solve")
+                            solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
+                            if (solver.FindSolution(multiThread: !singleThreaded, isRandom: true, cancellationToken: cancellationToken))
                             {
-                                SendMessage(ipPort, new SolvedResponse(message.nonce)
+                                ++count;
+                                Console.WriteLine("found solution with some midnights");
+                                if (count == 1 && message.command == "solve")
                                 {
-                                    solution = solver.FlatBoard.Select(SolverUtility.GetValue).ToArray()
-                                });
-                            }
-                        }
-                        Console.Write("no");
-                    } while (MidnightCellHelper.NextMidnight());
-
-
-                    if (message.command == "truecandidates")
-                    {
-                        if (solver.customInfo.TryGetValue("ComparableData", out object comparableDataObj) && comparableDataObj is byte[] comparableData)
-                        {
-                            lock (serverLock)
-                            {
-                                if (trueCandidatesResponseCache.TryGetValue(comparableData, out BaseResponse response))
-                                {
-                                    response.nonce = message.nonce;
-                                    SendMessage(ipPort, response);
-                                    return;
+                                    SendMessage(ipPort, new SolvedResponse(message.nonce)
+                                    {
+                                        solution = solver.FlatBoard.Select(SolverUtility.GetValue).ToArray()
+                                    });
                                 }
                             }
                         }
-                    }
+                        catch (ArgumentException)
+                        {
+                            // Console.WriteLine("cur variation has no sols");
+                        }
+                    } while (MidnightCellHelper.NextMidnight());
 
-                    solver.customInfo["fpuzzlesdata"] = message.data;
-                    switch (message.command)
-                    {
-                        case "truecandidates":
-                            SendTrueCandidates(ipPort, message.nonce, solver, cancellationToken);
-                            break;
-                        case "solve":
-                            // SendSolve(ipPort, message.nonce, solver, cancellationToken);
-                            break;
-                        case "check":
-                            SendCount(ipPort, message.nonce, solver, 2, cancellationToken);
-                            break;
-                        case "count":
-                            SendCount(ipPort, message.nonce, solver, 0, cancellationToken);
-                            break;
-                        case "estimate":
-                            SendEstimate(ipPort, message.nonce, solver, cancellationToken);
-                            break;
-                        case "solvepath":
-                            SendSolvePath(ipPort, message.nonce, solver, cancellationToken);
-                            break;
-                        case "step":
-                            SendStep(ipPort, message.nonce, solver, cancellationToken);
-                            break;
-                    }
+
+                    // not using this stuff
+
+                    // if (message.command == "truecandidates")
+                    // {
+                    //     if (solver.customInfo.TryGetValue("ComparableData", out object comparableDataObj) && comparableDataObj is byte[] comparableData)
+                    //     {
+                    //         lock (serverLock)
+                    //         {
+                    //             if (trueCandidatesResponseCache.TryGetValue(comparableData, out BaseResponse response))
+                    //             {
+                    //                 response.nonce = message.nonce;
+                    //                 SendMessage(ipPort, response);
+                    //                 return;
+                    //             }
+                    //         }
+                    //     }
+                    // }
+
+                    // solver.customInfo["fpuzzlesdata"] = message.data;
+                    //     switch (message.command)
+                    //     {
+                    //         case "truecandidates":
+                    //             SendTrueCandidates(ipPort, message.nonce, solver, cancellationToken);
+                    //             break;
+                    //         case "solve":
+                    //             // SendSolve(ipPort, message.nonce, solver, cancellationToken);
+                    //             break;
+                    //         case "check":
+                    //             SendCount(ipPort, message.nonce, solver, 2, cancellationToken);
+                    //             break;
+                    //         case "count":
+                    //             SendCount(ipPort, message.nonce, solver, 0, cancellationToken);
+                    //             break;
+                    //         case "estimate":
+                    //             SendEstimate(ipPort, message.nonce, solver, cancellationToken);
+                    //             break;
+                    //         case "solvepath":
+                    //             SendSolvePath(ipPort, message.nonce, solver, cancellationToken);
+                    //             break;
+                    //         case "step":
+                    //             SendStep(ipPort, message.nonce, solver, cancellationToken);
+                    //             break;
+                    //     }
                 }
                 catch (OperationCanceledException)
                 {

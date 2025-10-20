@@ -1,5 +1,6 @@
 ﻿using LZStringCSharp;
 using SudokuSolver.Constraints;
+using SudokuSolver.Constraints.Helpers.Midnight_Custom;
 using SudokuSolver.Constraints.Midnight_Custom;
 using SudokuSolver.PuzzleFormats;
 using System;
@@ -1003,6 +1004,19 @@ namespace SudokuSolver
 
             // make sure to implement the constraingmanager constructor for midnight stuff
             // Midnight Constraints:
+            StringBuilder midnights = new();
+            for (int i0 = 0; i0 < height; i0++)
+            {
+                for (int j0 = 0; j0 < height; j0++)
+                {
+                    if (MidnightCellHelper.isMidnight[i0, j0])
+                    {
+                        midnights.Append("r" + (i0 + 1) + "c" + (j0 + 1));
+                    }
+                }
+            }
+            solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
+
             if (fpuzzlesData.midnightkropkiratio != null)
             {
                 foreach (var midnightkropkiratio in fpuzzlesData.midnightkropkiratio)

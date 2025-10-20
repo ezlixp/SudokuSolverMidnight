@@ -2,7 +2,8 @@ namespace SudokuSolver.Constraints.Helpers.Midnight_Custom;
 
 public static class MidnightCellHelper
 {
-    public static bool[,] isMidnight = {};
+    private static bool initialized = false;
+    public static bool[,] isMidnight = { };
 
     static bool[,] allowed = new bool[9, 9]; // true = allowed cell
     static List<bool[,]> allGrids = new();
@@ -17,33 +18,23 @@ public static class MidnightCellHelper
         return r / 3 * 3 + c / 3;
     }
 
-    static void PrintGrid()
+    static void PrintGrid(int num)
     {
-        int[,] grid = new int[9, 9];
-
-        for (int r = 0; r < 9; r++)
-            grid[r, choice[r]] = 1;
-
-        for (int r = 0; r < 9; r++)
-        {
-            for (int c = 0; c < 9; c++)
-                Console.Write(grid[r, c] + " ");
-            Console.WriteLine();
-        }
-        Console.WriteLine("-------------------------");
     }
 
     static void Solve(int row)
     {
         if (row == 9)
         {
-            num++;
             allGrids.Add(new bool[9, 9]);
-            for (int r = 0; r < 9; r++){
-                for (int c = 0; c < 9; c++){
-                    allGrids[num][r,c] = (choice[r] == c);
+            for (int r = 0; r < 9; r++)
+            {
+                for (int c = 0; c < 9; c++)
+                {
+                    allGrids[num][r, c] = (choice[r] == c);
                 }
             }
+            num++;
             return;
         }
 
@@ -71,8 +62,10 @@ public static class MidnightCellHelper
         return true;
     }
 
-    static void Init()
+    public static void Init()
     {
+        if (initialized) return;
+        initialized = true;
         for (int r = 0; r < 9; r++)
         {
             for (int c = 0; c < 9; c++)
