@@ -4,6 +4,7 @@ using SudokuSolver.Constraints.Midnight_Custom;
 
 namespace SudokuSolver.Constraints.Midnight_Custom;
 
+[Constraint(DisplayName = "Midnight Kropki Ratio", ConsoleName = "midnightkropkiratio")]
 public class MidnightKropkiRatioConstraint : MidnightOrthogonalConstraint
 {
     public MidnightKropkiRatioConstraint(Solver sudokuSolver, string options) : base(sudokuSolver, options)
@@ -25,5 +26,5 @@ public class MidnightKropkiRatioConstraint : MidnightOrthogonalConstraint
     protected override bool IsPairAllowedAcrossMarker(int markerValue, int v0, int v1) => true;
 
     protected override List<int> otherCell(int v) =>
-        v % 2 == 0 ? [2*v, v/2] : [2 * v];
+        v % 2 == 0 ? [2 * v, v / 2] : [2 * v];
 }

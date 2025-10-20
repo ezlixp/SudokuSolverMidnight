@@ -4,6 +4,7 @@ using SudokuSolver.Constraints.Midnight_Custom;
 
 namespace SudokuSolver.Constraints.Midnight_Custom;
 
+[Constraint(DisplayName = "Midnight Sum", ConsoleName = "midnightsum")]
 public class MidnightSumConstraint : MidnightOrthogonalConstraint
 {
     public MidnightSumConstraint(Solver sudokuSolver, string options) : base(sudokuSolver, options)

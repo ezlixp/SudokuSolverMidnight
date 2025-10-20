@@ -4,6 +4,7 @@ using SudokuSolver.Constraints.Midnight_Custom;
 
 namespace SudokuSolver.Constraints.Midnight_Custom;
 
+[Constraint(DisplayName = "Midnight Product", ConsoleName = "midnightproduct")]
 public class MidnightProductConstraint : MidnightOrthogonalConstraint
 {
     public MidnightProductConstraint(Solver sudokuSolver, string options) : base(sudokuSolver, options)

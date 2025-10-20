@@ -1,4 +1,6 @@
-﻿namespace SudokuSolver;
+﻿using SudokuSolver.Constraints.Midnight_Custom;
+
+namespace SudokuSolver;
 
 public static class ConstraintManager
 {
@@ -121,6 +123,10 @@ public static class ConstraintManager
         { typeof(WhispersConstraint), (solver, options) => new WhispersConstraint(solver, options) },
         { typeof(ZipperLineConstraint), (solver, options) => new ZipperLineConstraint(solver, options) },
         { typeof(SlowThermometerConstraint), (solver, options) => new SlowThermometerConstraint(solver, options) },
+        { typeof(MidnightKropkiRatioConstraint), (solver, options) => new MidnightKropkiRatioConstraint(solver, options) },
+        { typeof(MidnightKropkiSequenceConstraint), (solver, options) => new MidnightKropkiSequenceConstraint(solver, options) },
+        { typeof(MidnightProductConstraint), (solver, options) => new MidnightProductConstraint(solver, options) },
+        { typeof(MidnightSumConstraint), (solver, options) => new MidnightSumConstraint(solver, options) },
     };
 
     private static readonly Dictionary<Type, Func<Solver, string, IConstraintGroup>> constraintGroupTypeConstructors = new()

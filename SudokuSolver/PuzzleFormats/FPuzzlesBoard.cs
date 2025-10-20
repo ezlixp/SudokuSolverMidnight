@@ -62,6 +62,10 @@ public class FPuzzlesBoard
     public FPuzzlesLines[] doublearrow { get; set; }
     public FPuzzlesLines[] zipperline { get; set; }
     public FPuzzlesLines[] slowthermometer { get; set; }
+    public FPuzzlesCells[] midnightkropkiratio { get; set; }
+    public FPuzzlesCells[] midnightkropkisequence { get; set; }
+    public FPuzzlesCells[] midnightproduct { get; set; }
+    public FPuzzlesCells[] midnightsum { get; set; }
     public string[] disabledlogic { get; set; } = null;
     public string[] truecandidatesoptions { get; set; } = null;
 };

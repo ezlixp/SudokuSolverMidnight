@@ -1,4 +1,5 @@
 ﻿using SudokuSolver;
+using SudokuSolver.Constraints.Helpers.Midnight_Custom;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -178,7 +179,27 @@ internal class WebsocketListener : IDisposable
                     }
                     // loop through starting midnight states here
                     // in solverfactory create from fpuzzles, initialize midnight boxes constraint with group
-                    Solver solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
+                    int count = 0;
+                    Solver solver;
+                    do
+                    {
+                        solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
+                        if (solver.FindSolution(multiThread: !singleThreaded, isRandom: true, cancellationToken: cancellationToken))
+                        {
+                            ++count;
+                            Console.WriteLine("found solution with some midnights");
+                            if (count == 1 && message.command == "solve")
+                            {
+                                SendMessage(ipPort, new SolvedResponse(message.nonce)
+                                {
+                                    solution = solver.FlatBoard.Select(SolverUtility.GetValue).ToArray()
+                                });
+                            }
+                        }
+                        Console.Write("no");
+                    } while (MidnightCellHelper.NextMidnight());
+
+
                     if (message.command == "truecandidates")
                     {
                         if (solver.customInfo.TryGetValue("ComparableData", out object comparableDataObj) && comparableDataObj is byte[] comparableData)
@@ -202,7 +223,7 @@ internal class WebsocketListener : IDisposable
                             SendTrueCandidates(ipPort, message.nonce, solver, cancellationToken);
                             break;
                         case "solve":
-                            SendSolve(ipPort, message.nonce, solver, cancellationToken);
+                            // SendSolve(ipPort, message.nonce, solver, cancellationToken);
                             break;
                         case "check":
                             SendCount(ipPort, message.nonce, solver, 2, cancellationToken);

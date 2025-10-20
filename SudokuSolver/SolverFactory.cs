@@ -1,4 +1,8 @@
-﻿using System;
+﻿using LZStringCSharp;
+using SudokuSolver.Constraints;
+using SudokuSolver.Constraints.Midnight_Custom;
+using SudokuSolver.PuzzleFormats;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,9 +10,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using LZStringCSharp;
-using SudokuSolver.Constraints;
-using SudokuSolver.PuzzleFormats;
 using static SudokuSolver.SolverUtility;
 
 namespace SudokuSolver
@@ -1000,6 +1001,42 @@ namespace SudokuSolver
                 }
             }
 
+            // make sure to implement the constraingmanager constructor for midnight stuff
+            // Midnight Constraints:
+            if (fpuzzlesData.midnightkropkiratio != null)
+            {
+                foreach (var midnightkropkiratio in fpuzzlesData.midnightkropkiratio)
+                {
+                    solver.AddConstraint(typeof(MidnightKropkiRatioConstraint), ToOptions(midnightkropkiratio.cells));
+                }
+            }
+
+
+            if (fpuzzlesData.midnightkropkisequence != null)
+            {
+                foreach (var midnightkropkisequence in fpuzzlesData.midnightkropkisequence)
+                {
+                    solver.AddConstraint(typeof(MidnightKropkiSequenceConstraint), ToOptions(midnightkropkisequence.cells));
+                }
+            }
+
+            if (fpuzzlesData.midnightproduct != null)
+            {
+                foreach (var midnightproduct in fpuzzlesData.midnightproduct)
+                {
+                    solver.AddConstraint(typeof(MidnightProductConstraint), ToOptions(midnightproduct.cells));
+                }
+            }
+
+            if (fpuzzlesData.midnightsum != null)
+            {
+                foreach (var midnightsum in fpuzzlesData.midnightsum)
+                {
+                    solver.AddConstraint(typeof(MidnightSumConstraint), ToOptions(midnightsum.cells));
+                }
+            }
+
+
             // Apply any command-line constraints
             if (additionalConstraints != null)
             {
@@ -1294,7 +1331,8 @@ namespace SudokuSolver
             foreach (var c in solver.Constraints<WhispersConstraint>())
             {
                 string[] cells = c.cells.Select(CN).ToArray();
-                whispers.Add(new() {
+                whispers.Add(new()
+                {
                     lines = [cells],
                     value = c.difference.ToString(),
                 });
