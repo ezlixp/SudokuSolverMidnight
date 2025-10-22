@@ -1343,8 +1343,6 @@ let onetime = false;
                 }
             }
 
-            // to be implemented
-
             // Midnight Sum
             const constraintsMidnightSum = constraints[cID("Midnight Sum")];
             if (constraintsMidnightSum && constraintsMidnightSum.length > 0) {
