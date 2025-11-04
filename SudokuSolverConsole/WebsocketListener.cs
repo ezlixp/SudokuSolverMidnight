@@ -190,12 +190,11 @@ internal class WebsocketListener : IDisposable
                             if (solver.FindSolution(multiThread: !singleThreaded, isRandom: true, cancellationToken: cancellationToken))
                             {
                                 ++count;
-                                Console.WriteLine("found solution with some midnights");
                                 if (count == 1 && message.command == "solve")
                                 {
                                     SendMessage(ipPort, new SolvedResponse(message.nonce)
                                     {
-                                        solution = solver.FlatBoard.Select(SolverUtility.GetValue).ToArray()
+                                        solution = MidnightCellHelper.applyMidnight(solver.FlatBoard.Select(SolverUtility.GetValue).ToArray())
                                     });
                                 }
                             }

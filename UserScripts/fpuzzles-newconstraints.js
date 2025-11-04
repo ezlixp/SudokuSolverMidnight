@@ -17,12 +17,12 @@ let onetime = false;
     // Adding a new constraint:
     // 1. Add a new entry to the newConstraintInfo array
     // 2. If the type is not already supported, add it to the following:
-    //      a. exportPuzzle | unimportant until end
-    //      b. importPuzzle | unimportant until end
-    //      c. categorizeTools | done for msum
-    //      d. Add a drawing helper function for what it looks like | done
-    // 3. Add conflict highlighting logic to candidatePossibleInCell | last priority
-    // 4. Add a new constraint class (see 'Constraint classes' comment) | done
+    //      a. exportPuzzle
+    //      b. importPuzzle
+    //      c. categorizeTools
+    //      d. Add a drawing helper function for what it looks like
+    // 3. Add conflict highlighting logic to candidatePossibleInCell
+    // 4. Add a new constraint class (see 'Constraint classes' comment)
     const newConstraintInfo = [
         {
             name: "Renban",

@@ -566,7 +566,12 @@
                         const cel = grid[i][j];
                         if (!cel || cel.given) continue;
                         const ci = i * size + j;
-                        cel.value = sol[ci];
+                        if (sol[ci] > size) {
+                            cel.value = sol[ci] ^ (1 << 10);
+                            constraints[cID("Given Midnight")].push(new window[cID("Given Midnight")]([grid[i][j]]));
+                            grid[i][j].midnight = true;
+                            grid[i][j].lockedmidnight = true;
+                        } else cel.value = sol[ci];
                         cel.centerPencilMarks = [];
                         cel.candidates = [cel.value];
                         cel.centerPencilMarkColors = null;

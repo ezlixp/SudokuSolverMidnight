@@ -55,6 +55,18 @@ public static class MidnightCellHelper
             usedBox[b] = false;
         }
     }
+    public static int[] applyMidnight(int[] flattenedCells)
+    {
+        int idx = 0;
+        for (int i = 0; i < 9; i++)
+            for (int j = 0; j < 9; j++)
+            {
+                if (isMidnight[i, j])
+                    flattenedCells[idx] ^= 1 << 10;
+                ++idx;
+            }
+        return flattenedCells;
+    }
     public static bool NextMidnight()
     {
         if (curIdx == 46655) return false;
