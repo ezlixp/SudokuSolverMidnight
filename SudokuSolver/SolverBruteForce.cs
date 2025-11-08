@@ -166,11 +166,6 @@ public partial class Solver
                 }
             }
 
-            // this is where i have to check for midnight and clear values in all the other midnight cells
-            // i don't have to do anything on line 155 actually since if it conflicts it already won't be considered
-            // solver.setvalue fails if setting ts to val contradicts in some way
-            // with the conditions n stuff
-
             // Change the board to only allow this value in the slot
             if (solver.SetValue(cellIndex, val))
             {
