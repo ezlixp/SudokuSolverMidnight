@@ -1,9 +1,12 @@
+using LZStringCSharp;
+using System.Text.Json;
+
 namespace SudokuSolver.Constraints.Helpers.Midnight_Custom;
 
 public static class MidnightCellHelper
 {
     private static bool initialized = false;
-    public static bool[,] isMidnight = { };
+    public static bool[,] isMidnight = new bool[9, 9];
 
     static bool[,] allowed = new bool[9, 9]; // true = allowed cell
     static List<bool[,]> allGrids = new();
@@ -74,8 +77,16 @@ public static class MidnightCellHelper
         return true;
     }
 
-    public static void Init()
+    public static void Init(string messageData)
     {
+        if (messageData.Contains("?load="))
+        {
+            int trimStart = messageData.IndexOf("?load=") + "?load=".Length;
+            messageData = messageData[trimStart..];
+        }
+
+        string fpuzzlesJson = LZString.DecompressFromBase64(messageData);
+        var fpuzzlesData = JsonSerializer.Deserialize(fpuzzlesJson, FpuzzlesJsonContext.Default.FPuzzlesBoard);
         curIdx = 0;
         if (initialized) return;
         initialized = true;
