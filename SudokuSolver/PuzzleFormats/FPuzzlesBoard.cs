@@ -29,6 +29,7 @@ public class FPuzzlesBoard
     public bool antiking { get; set; }
     public bool disjointgroups { get; set; }
     public bool nonconsecutive { get; set; }
+    public bool midnightcells { get; set; }
     public string[] negative { get; set; }
     public FPuzzlesArrowEntry[] arrow { get; set; }
     public FPuzzlesKillerCageEntry[] killercage { get; set; }

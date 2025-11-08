@@ -177,78 +177,51 @@ internal class WebsocketListener : IDisposable
                             onlyGivens = true;
                             break;
                     }
-                    // loop through starting midnight states here
-                    // in solverfactory create from fpuzzles, initialize midnight boxes constraint with group
-                    int count = 0;
                     Solver solver;
-                    MidnightCellHelper.Init();
-                    do
+                    solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
+
+
+                    if (message.command == "truecandidates")
                     {
-                        try
+                        if (solver.customInfo.TryGetValue("ComparableData", out object comparableDataObj) && comparableDataObj is byte[] comparableData)
                         {
-                            solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
-                            if (solver.FindSolution(multiThread: !singleThreaded, isRandom: true, cancellationToken: cancellationToken))
+                            lock (serverLock)
                             {
-                                ++count;
-                                if (count == 1 && message.command == "solve")
+                                if (trueCandidatesResponseCache.TryGetValue(comparableData, out BaseResponse response))
                                 {
-                                    SendMessage(ipPort, new SolvedResponse(message.nonce)
-                                    {
-                                        solution = MidnightCellHelper.applyMidnight(solver.FlatBoard.Select(SolverUtility.GetValue).ToArray())
-                                    });
+                                    response.nonce = message.nonce;
+                                    SendMessage(ipPort, response);
+                                    return;
                                 }
                             }
                         }
-                        catch (ArgumentException)
-                        {
-                        }
-                    } while (MidnightCellHelper.NextMidnight());
-                    Console.WriteLine($"Finished searching for solutions with total {count} midnight cell orientations found.");
+                    }
 
-
-                    // not using this stuff
-
-                    // if (message.command == "truecandidates")
-                    // {
-                    //     if (solver.customInfo.TryGetValue("ComparableData", out object comparableDataObj) && comparableDataObj is byte[] comparableData)
-                    //     {
-                    //         lock (serverLock)
-                    //         {
-                    //             if (trueCandidatesResponseCache.TryGetValue(comparableData, out BaseResponse response))
-                    //             {
-                    //                 response.nonce = message.nonce;
-                    //                 SendMessage(ipPort, response);
-                    //                 return;
-                    //             }
-                    //         }
-                    //     }
-                    // }
-
-                    // solver.customInfo["fpuzzlesdata"] = message.data;
-                    //     switch (message.command)
-                    //     {
-                    //         case "truecandidates":
-                    //             SendTrueCandidates(ipPort, message.nonce, solver, cancellationToken);
-                    //             break;
-                    //         case "solve":
-                    //             // SendSolve(ipPort, message.nonce, solver, cancellationToken);
-                    //             break;
-                    //         case "check":
-                    //             SendCount(ipPort, message.nonce, solver, 2, cancellationToken);
-                    //             break;
-                    //         case "count":
-                    //             SendCount(ipPort, message.nonce, solver, 0, cancellationToken);
-                    //             break;
-                    //         case "estimate":
-                    //             SendEstimate(ipPort, message.nonce, solver, cancellationToken);
-                    //             break;
-                    //         case "solvepath":
-                    //             SendSolvePath(ipPort, message.nonce, solver, cancellationToken);
-                    //             break;
-                    //         case "step":
-                    //             SendStep(ipPort, message.nonce, solver, cancellationToken);
-                    //             break;
-                    //     }
+                    solver.customInfo["fpuzzlesdata"] = message.data;
+                    switch (message.command)
+                    {
+                        case "truecandidates":
+                            SendTrueCandidates(ipPort, message.nonce, solver, cancellationToken);
+                            break;
+                        case "solve":
+                            SendSolve(ipPort, message.nonce, solver, cancellationToken);
+                            break;
+                        case "check":
+                            SendCount(ipPort, message.nonce, solver, 2, cancellationToken);
+                            break;
+                        case "count":
+                            SendCount(ipPort, message.nonce, solver, 0, cancellationToken);
+                            break;
+                        case "estimate":
+                            SendEstimate(ipPort, message.nonce, solver, cancellationToken);
+                            break;
+                        case "solvepath":
+                            SendSolvePath(ipPort, message.nonce, solver, cancellationToken);
+                            break;
+                        case "step":
+                            SendStep(ipPort, message.nonce, solver, cancellationToken);
+                            break;
+                    }
                 }
                 catch (OperationCanceledException)
                 {

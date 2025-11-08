@@ -454,6 +454,10 @@ namespace SudokuSolver
             {
                 solver.AddConstraint(typeof(DisjointConstraintGroup), string.Empty);
             }
+            if (fpuzzlesData.midnightcells)
+            {
+                solver.AddConstraint(typeof(MidnightCellsToggleConstraint), string.Empty);
+            }
 
             // Marked constraints
             if (fpuzzlesData.arrow != null)
@@ -1002,20 +1006,19 @@ namespace SudokuSolver
                 }
             }
 
-            // make sure to implement the constraingmanager constructor for midnight stuff
-            // Midnight Constraints:
-            StringBuilder midnights = new();
-            for (int i0 = 0; i0 < height; i0++)
-            {
-                for (int j0 = 0; j0 < height; j0++)
-                {
-                    if (MidnightCellHelper.isMidnight[i0, j0])
-                    {
-                        midnights.Append("r" + (i0 + 1) + "c" + (j0 + 1));
-                    }
-                }
-            }
-            solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
+            // StringBuilder midnights = new();
+            // for (int i0 = 0; i0 < height; i0++)
+            // {
+            //     for (int j0 = 0; j0 < height; j0++)
+            //     {
+            //         if (MidnightCellHelper.isMidnight[i0, j0])
+            //         {
+            //             midnights.Append("r" + (i0 + 1) + "c" + (j0 + 1));
+            //         }
+            //     }
+            // }
+            // // refactor this, move to beginning of each solve iteration, and skip finalize constraints
+            // solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
 
             if (fpuzzlesData.midnightkropkiratio != null)
             {
@@ -1057,21 +1060,37 @@ namespace SudokuSolver
                 ApplyConstraints(solver, additionalConstraints);
             }
 
+            if (!fpuzzlesData.midnightcells)
+            {
+
+                return FinalizeFPuzzles(solver, fpuzzlesData, comparableDataStream, comparableData, onlyGivens);
+            }
+            else
+            {
+                return solver;
+            }
+        }
+
+        public static Solver FinalizeFPuzzles(Solver solver, FPuzzlesBoard fpuzzlesData, MemoryStream comparableDataStream, BinaryWriter comparableData, bool onlyGivens = false)
+        {
+
             if (!solver.FinalizeConstraints())
             {
                 throw new ArgumentException("ERROR: The constraints are invalid (no solutions).");
             }
 
+            int height = fpuzzlesData.grid.Length;
+            int width = fpuzzlesData.grid[0].Length;
             bool[,] isOriginalGiven = new bool[height, width];
             solver.customInfo["Givens"] = isOriginalGiven;
 
             uint[,] originalCenterMarks = !onlyGivens ? new uint[height, width] : null;
             solver.customInfo["OriginalCenterMarks"] = originalCenterMarks;
 
-            i = 0;
+            int i = 0;
             foreach (var row in fpuzzlesData.grid)
             {
-                j = 0;
+                int j = 0;
                 foreach (var val in row)
                 {
                     if (!onlyGivens)
@@ -1486,6 +1505,7 @@ namespace SudokuSolver
 
             static T[] ToArray<T>(List<T> list) => list.Count > 0 ? list.ToArray() : null;
 
+            // TODO: add midnight constraints here
             FPuzzlesBoard fp = new()
             {
                 size = solver.WIDTH,
