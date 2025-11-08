@@ -261,6 +261,11 @@ let onetime = false;
         },
         // Midnight
         {
+            name: "Midnight Cells",
+            type: "bool",
+            tooltip: ["Cells that are marked as midnight cells have a value of twelve for midnight constraints."],
+        },
+        {
             name: "Given Midnight",
             type: "midnight",
             tooltip: [
@@ -1330,16 +1335,18 @@ let onetime = false;
             }
 
             // Given Midnight
-            const constraintsGivenMidnight = constraints[cID("Given Midnight")];
-            if (constraintsGivenMidnight && constraintsGivenMidnight.length > 0) {
-                if (cell.midnight) {
-                    for (let i = 0; i < constraintsGivenMidnight.length; i++)
-                        if (
-                            constraintsGivenMidnight[i].cell !== cell &&
-                            constraintsGivenMidnight[i].cell.value &&
-                            constraintsGivenMidnight[i].cell.value == n
-                        )
-                            return false;
+            if (constraints[cID("Midnight Cells")]) {
+                const constraintsGivenMidnight = constraints[cID("Given Midnight")];
+                if (constraintsGivenMidnight && constraintsGivenMidnight.length > 0) {
+                    if (cell.midnight) {
+                        for (let i = 0; i < constraintsGivenMidnight.length; i++)
+                            if (
+                                constraintsGivenMidnight[i].cell !== cell &&
+                                constraintsGivenMidnight[i].cell.value &&
+                                constraintsGivenMidnight[i].cell.value == n
+                            )
+                                return false;
+                    }
                 }
             }
 
@@ -1843,7 +1850,9 @@ let onetime = false;
                 ctx.strokeStyle = "#FFFFFF";
                 ctx.fillRect(this.cell.x, this.cell.y, cellSL, cellSL);
                 ctx.fill;
-                ctx.fillStyle = "rgba(85, 31, 233, 0.25)";
+                const colour = constraints[cID("Midnight Cells")] ? "rgba(85, 31, 233, 0.25)" : "rgba(0, 0, 0, 0.25)";
+                this.cell.midnight = constraints[cID("Midnight Cells")];
+                ctx.fillStyle = colour;
                 ctx.strokeStyle = "#000000";
                 ctx.fillRect(this.cell.x, this.cell.y, cellSL, cellSL);
             };
@@ -1969,6 +1978,8 @@ let onetime = false;
                     // between should only include extra midnight constraints, so simply insert at the end
                     if (!toolConstraints.includes(info.name)) toolConstraints.push(info.name);
                     if (!borderConstraints.includes(info.name)) borderConstraints.push(info.name);
+                } else if (info.type == "bool") {
+                    if (!boolConstraints.includes(info.name)) boolConstraints.push(info.name);
                 }
             }
 
