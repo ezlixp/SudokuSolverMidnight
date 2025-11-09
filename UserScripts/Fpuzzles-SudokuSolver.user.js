@@ -566,6 +566,8 @@
                     for (let j = 0; j < size; j++) {
                         const cel = grid[i][j];
                         const ci = i * size + j;
+                        grid[i][j].midnight = false;
+                        grid[i][j].lockedmidnight = false;
                         if (sol[ci] > size) {
                             cel.value = sol[ci] ^ (1 << 10);
                             constraints[cID("Given Midnight")].push(new window[cID("Given Midnight")]([grid[i][j]]));
