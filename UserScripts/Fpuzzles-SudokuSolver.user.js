@@ -561,6 +561,7 @@
         const importGivens = function (response) {
             if (response.type === "solved") {
                 const sol = response.solution;
+                constraints[cID("Given Midnight")] = [];
                 for (let i = 0; i < size; i++)
                     for (let j = 0; j < size; j++) {
                         const cel = grid[i][j];
