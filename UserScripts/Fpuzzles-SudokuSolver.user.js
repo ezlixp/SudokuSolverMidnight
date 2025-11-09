@@ -632,15 +632,34 @@
             let compl = false;
             if (response.type === "count") {
                 const ct = response.count;
+                const uniqueMidnight = response.uniqueMidnight;
                 if (response.inProgress) {
                     clearConsole();
-                    log("Found " + ct + " solutions so far...");
+                    if (uniqueMidnight === 0) log("Found " + ct + " solutions so far...");
+                    else
+                        log(
+                            "Found " +
+                                ct +
+                                " solutions so far accross " +
+                                uniqueMidnight +
+                                " different starting midnight cell configurations."
+                        );
                     commandIsComplete = false;
                 } else {
                     clearConsole();
                     if (ct == 0) log("There are no solutions.");
                     else if (ct == 1) log("There is a unique solution.");
-                    else log("There are exactly " + ct + " solutions.");
+                    else {
+                        if (uniqueMidnight === 0) log("There are exactly " + ct + " solutions.");
+                        else
+                            log(
+                                "There are exactly " +
+                                    ct +
+                                    " solutions accross " +
+                                    uniqueMidnight +
+                                    " different starting midnight cell configurations."
+                            );
+                    }
                     compl = true;
                     commandIsComplete = true;
                 }
