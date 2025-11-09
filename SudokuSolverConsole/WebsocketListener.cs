@@ -634,6 +634,7 @@ internal class WebsocketListener : IDisposable
         else
         {
             MidnightCellHelper.Init(data.ToString());
+
             SendMessage(ipPort, new MidnightSpotsResponse(nonce)
             {
                 message = "There are naively " + MidnightCellHelper.num + " possible starting orientations for midnight cells (no midnight cells next to midnight sums or kropki sequences)."
