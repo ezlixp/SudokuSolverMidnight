@@ -565,7 +565,6 @@
                 for (let i = 0; i < size; i++)
                     for (let j = 0; j < size; j++) {
                         const cel = grid[i][j];
-                        if (!cel || cel.given) continue;
                         const ci = i * size + j;
                         if (sol[ci] > size) {
                             cel.value = sol[ci] ^ (1 << 10);
@@ -573,6 +572,7 @@
                             grid[i][j].midnight = true;
                             grid[i][j].lockedmidnight = true;
                         } else cel.value = sol[ci];
+                        if (!cel || cel.given) continue;
                         cel.centerPencilMarks = [];
                         cel.candidates = [cel.value];
                         cel.centerPencilMarkColors = null;
