@@ -15,6 +15,7 @@ public static class MidnightCellHelper
     static int[] choice = new int[9]; // chosen column for each row
     static int num = 0;
     public static int curIdx = 0;
+    static string lastStartingData;
 
     static int BoxId(int r, int c)
     {
@@ -72,7 +73,7 @@ public static class MidnightCellHelper
     }
     public static bool NextMidnight()
     {
-        if (curIdx == 46655) return false;
+        if (curIdx == num - 1) return false;
         isMidnight = allGrids[++curIdx];
         return true;
     }
@@ -88,8 +89,13 @@ public static class MidnightCellHelper
         string fpuzzlesJson = LZString.DecompressFromBase64(messageData);
         var fpuzzlesData = JsonSerializer.Deserialize(fpuzzlesJson, FpuzzlesJsonContext.Default.FPuzzlesBoard);
         curIdx = 0;
-        if (initialized) return;
+        if (initialized && messageData != lastStartingData)
+        {
+            return;
+        }
+        lastStartingData = messageData;
         initialized = true;
+        num = 0;
         for (int r = 0; r < 9; r++)
         {
             for (int c = 0; c < 9; c++)
@@ -97,8 +103,41 @@ public static class MidnightCellHelper
                 allowed[r, c] = true;
             }
         }
+        foreach (var kropkiSequence in fpuzzlesData.midnightkropkisequence)
+        {
+            foreach (var cell in kropkiSequence.cells)
+            {
+                int row = int.Parse(cell[1].ToString()) - 1;
+                int column = int.Parse(cell[3].ToString()) - 1;
+                allowed[row, column] = false;
+            }
+        }
+        foreach (var sum in fpuzzlesData.midnightsum)
+        {
+            foreach (var cell in sum.cells)
+            {
+                int row = int.Parse(cell[1].ToString()) - 1;
+                int column = int.Parse(cell[3].ToString()) - 1;
+                allowed[row, column] = false;
+            }
+        }
 
         Solve(0);
+        // debug code that makes the only possible midnight orientation the correct one:
+        // allGrids.Clear();
+        // allGrids.Add(new bool[,]
+        // {
+        //     {false, false, false, true, false, false, false, false, false},
+        //     {true, false, false, false, false, false, false, false, false},
+        //     {false, false, false, false, false, false, true, false, false},
+        //     {false, true, false, false, false, false, false, false, false},
+        //     {false, false, false, false, false, false, false, false, true},
+        //     {false, false, false, false, true, false, false, false, false},
+        //     {false, false, true, false, false, false, false, false, false},
+        //     {false, false, false, false, false, true, false, false, false},
+        //     {false, false, false, false, false, false, false, true, false},
+        // });
+        // num = 1;
         isMidnight = allGrids[0];
     }
 }
