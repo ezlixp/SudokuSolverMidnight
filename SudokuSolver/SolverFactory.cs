@@ -1006,19 +1006,21 @@ namespace SudokuSolver
                 }
             }
 
-            // StringBuilder midnights = new();
-            // for (int i0 = 0; i0 < height; i0++)
-            // {
-            //     for (int j0 = 0; j0 < height; j0++)
-            //     {
-            //         if (MidnightCellHelper.isMidnight[i0, j0])
-            //         {
-            //             midnights.Append("r" + (i0 + 1) + "c" + (j0 + 1));
-            //         }
-            //     }
-            // }
-            // // refactor this, move to beginning of each solve iteration, and skip finalize constraints
-            // solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
+            StringBuilder midnights = new();
+            for (int i0 = 0; i0 < height; i0++)
+            {
+                for (int j0 = 0; j0 < height; j0++)
+                {
+                    if (MidnightCellHelper.isMidnight[i0, j0])
+                    {
+                        midnights.Append("r" + (i0 + 1) + "c" + (j0 + 1));
+                    }
+                }
+            }
+            if (midnights.ToString().Length > 0)
+            {
+                solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
+            }
 
             if (fpuzzlesData.midnightkropkiratio != null)
             {

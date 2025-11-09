@@ -1,4 +1,8 @@
-﻿using System.Threading;
+﻿using LZStringCSharp;
+using SudokuSolver.Constraints.Helpers.Midnight_Custom;
+using SudokuSolver.Constraints.Midnight_Custom;
+using System.Text.Json;
+using System.Threading;
 
 namespace SudokuSolver;
 
@@ -14,12 +18,64 @@ public partial class Solver
     /// <returns>True if a solution is found, otherwise false.</returns>
     public bool FindSolution(bool multiThread = false, CancellationToken cancellationToken = default, bool isRandom = false)
     {
+        if (Constraints<MidnightCellsToggleConstraint>().Any())
+        {
+            if (customInfo.TryGetValue("fpuzzlesdata", out var data))
+            {
+                // simply recreate solvers from fpuzzles data and send solve here
+                MidnightCellHelper.Init(data.ToString());
+                do
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                    Solver solver = SolverFactory.CreateFromFPuzzles(data.ToString());
+
+                    try
+                    {
+                        MemoryStream stream = new();
+                        BinaryWriter writer = new(stream);
+                        string fpuzzlesURL = data.ToString();
+                        if (fpuzzlesURL.Contains("?load="))
+                        {
+                            int trimStart = fpuzzlesURL.IndexOf("?load=") + "?load=".Length;
+                            fpuzzlesURL = fpuzzlesURL[trimStart..];
+                        }
+                        string fpuzzlesJson = LZString.DecompressFromBase64(fpuzzlesURL);
+                        var fpuzzlesData = JsonSerializer.Deserialize(fpuzzlesJson, FpuzzlesJsonContext.Default.FPuzzlesBoard);
+
+                        solver = SolverFactory.FinalizeFPuzzles(solver, fpuzzlesData, stream, writer);
+                    }
+                    catch { continue; }
+
+                    if (solver.FindSolutionInternalWrapper(multiThread, cancellationToken, isRandom))
+                    {
+                        board = solver.board;
+                        return true;
+                    }
+                } while (MidnightCellHelper.NextMidnight());
+                return false;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return FindSolutionInternalWrapper(multiThread, cancellationToken, isRandom);
+        }
+
+    }
+    private bool FindSolutionInternalWrapper(bool multiThread = false, CancellationToken cancellationToken = default, bool isRandom = false)
+    {
+        Solver solver = Clone(willRunNonSinglesLogic: true);
         if (seenMap == null)
         {
             throw new InvalidOperationException("Must call FinalizeConstraints() first (even if there are no constraints)");
         }
 
-        Solver solver = Clone(willRunNonSinglesLogic: true);
         if (solver.DiscoverWeakLinks(cancellationToken) == LogicResult.Invalid)
         {
             return false;

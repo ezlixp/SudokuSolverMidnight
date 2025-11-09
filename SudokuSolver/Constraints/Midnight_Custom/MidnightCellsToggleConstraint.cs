@@ -5,5 +5,6 @@ public class MidnightCellsToggleConstraint : Constraint
 {
     public MidnightCellsToggleConstraint(Solver sudokuSolver, string options) : base(sudokuSolver, options) { }
 
-    public override bool EnforceConstraint(Solver sudokuSolver, int i, int j, int val) => false;
+    // This constraint is always satisfied as it is just a toggle
+    public override bool EnforceConstraint(Solver sudokuSolver, int i, int j, int val) => true;
 }

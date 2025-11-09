@@ -477,7 +477,7 @@ internal class WebsocketListener : IDisposable
         {
             SendMessage(ipPort, new SolvedResponse(nonce)
             {
-                solution = solver.FlatBoard.Select(SolverUtility.GetValue).ToArray()
+                solution = MidnightCellHelper.applyMidnight(solver.FlatBoard.Select(SolverUtility.GetValue).ToArray())
             });
         }
     }
