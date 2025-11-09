@@ -97,6 +97,7 @@ public static class MidnightCellHelper
         curIdx = 0;
         if (initialized && messageData == lastStartingData)
         {
+            isMidnight = allGrids[curIdx];
             return;
         }
         lastStartingData = messageData;
