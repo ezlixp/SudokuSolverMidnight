@@ -73,7 +73,7 @@ public partial class Solver
         Solver solver = Clone(willRunNonSinglesLogic: true);
         if (seenMap == null)
         {
-            throw new InvalidOperationException("Must call FinalizeConstraints() first (even if there are no constraints)");
+            throw new InvalidOperationException("Must call FinalizeConstraints() first (even if there are no constraints)\nThis error is likely a result of using a function not implemented for midnight cell puzzles.");
         }
 
         if (solver.DiscoverWeakLinks(cancellationToken) == LogicResult.Invalid)
