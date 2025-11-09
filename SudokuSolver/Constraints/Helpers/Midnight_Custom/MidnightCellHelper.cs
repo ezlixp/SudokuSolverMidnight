@@ -13,7 +13,7 @@ public static class MidnightCellHelper
     static bool[] usedCol = new bool[9];
     static bool[] usedBox = new bool[9];
     static int[] choice = new int[9]; // chosen column for each row
-    static int num = 0;
+    public static int num = 0;
     public static int curIdx = 0;
     static string lastStartingData;
 

@@ -57,6 +57,7 @@
         // UI Elements for custom buttons
         let trueCandidatesButton = null;
         let estimateCountButton = null;
+        let midnightSpotsButton = null;
 
         // For layout adjustments
         let initialConsoleSection0Y = 0;
@@ -325,6 +326,26 @@
                 trueCandidatesButton.h = buttonLH;
                 trueCandidatesButton.modes = ["Solving", "Setting"];
 
+                // Midnight Spots Button
+                if (!midnightSpotsButton) {
+                    midnightSpotsButton = new button(
+                        estimateCountButton.x, // use estimate count button x since true candidates button is smaller and has weirder x
+                        trueCandidatesButton.y + buttonLH + buttonGap,
+                        buttonW - buttonLH - buttonGap,
+                        buttonLH,
+                        ["Solving", "Setting"],
+                        "Midnight Spots",
+                        "Midnight Spots"
+                    );
+                }
+                // Ensure properties are set
+                midnightSpotsButton.x = estimateCountButton.x;
+                midnightSpotsButton.y = trueCandidatesButton.y + buttonLH + buttonGap;
+                midnightSpotsButton.w = buttonW;
+                midnightSpotsButton.h = buttonLH;
+                midnightSpotsButton.modes = ["Solving", "Setting"];
+                initCancelableButton(midnightSpotsButton, "midnightspots");
+
                 // Hook existing f-puzzles buttons
                 if (!solutionPathButton.origClick) {
                     solutionPathButton.origClick = solutionPathButton.click;
@@ -375,6 +396,11 @@
                 }
                 if (trueCandidatesButton) numCustomButtons++;
 
+                if (midnightSpotsButton && !consoleSidebar.buttons.includes(midnightSpotsButton)) {
+                    consoleSidebar.buttons.push(midnightSpotsButton);
+                }
+                if (midnightSpotsButton) numCustomButtons++;
+
                 consoleSidebar.buttons.sort((a, b) => a.y - b.y); // Ensure visual order
 
                 // Store initial layout values if not already stored
@@ -414,6 +440,10 @@
                 if (trueCandidatesButton) {
                     let indexTC = consoleSidebar.buttons.indexOf(trueCandidatesButton);
                     if (indexTC > -1) consoleSidebar.buttons.splice(indexTC, 1);
+                }
+                if (midnightSpotsButton) {
+                    let indexMS = consoleSidebar.buttons.indexOf(midnightSpotsButton);
+                    if (indexMS > -1) consoleSidebar.buttons.splice(indexMC, 1);
                 }
 
                 // Revert layout to initial state
@@ -686,6 +716,16 @@
                 log(response.message, { newLine: false });
             }
         };
+        const handleMidnightSpots = function (response) {
+            clearConsole();
+            if (!handleInvalid(response)) {
+                log(response.message, { newLine: true });
+            }
+            if (cancelButton && cancelButton.solverCommand === "midnightspots") {
+                cancelButton.title = cancelButton.origTitle;
+                cancelButton = null;
+            }
+        };
 
         const safeHandleNotNumber = function (num) {
             // If it's already a string, return it as is
@@ -802,6 +842,9 @@
                             } else if (lastCommand === "estimate") {
                                 handleEstimate(response);
                                 currentOpDefinitelyCompleted = commandIsComplete; // handleEstimate sets global commandIsComplete to false
+                            } else if (lastCommand === "midnightspots") {
+                                handleMidnightSpots(response);
+                                commandIsComplete = true;
                             } else {
                                 console.warn("Unhandled lastCommand type in onmessage:", lastCommand);
                                 commandIsComplete = true;
