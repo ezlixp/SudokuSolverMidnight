@@ -8,12 +8,9 @@ namespace SudokuSolverConsole;
 
 public class Program
 {
-	private static string descriptionString = $"Version {SudokuSolverVersion.version} created by David Clamage (\"Rangsk\").\n" +
-		"https://github.com/dclamage/SudokuSolver\n\n" +
-		"This is free, open source software and is supported by the community.\n" +
-		"Watch me on YouTube: https://youtube.com/rangsk\n" +
-		"Support me on Patreon: https://www.patreon.com/rangsk\n" +
-		"Buy me a Coffee: https://ko-fi.com/rangsk";
+	private static string descriptionString = $"Version {SudokuSolverVersion.version} fork created by Henry, original by David Clamage (\"Rangsk\").\n" +
+		"https://github.com/ezlixp/SudokuSolverMidnight\n\n" +
+		"This is free, open source software and is supported by the community.\n";
 
 	public static async Task<int> Main(string[] args)
 	{
@@ -200,7 +197,7 @@ public class Program
 		if (!HideBanner)
 		{
 			Console.WriteLine("------------------------------------");
-			Console.WriteLine("Sudoku Solver");
+			Console.WriteLine("Sudoku Solver Midnight");
 			Console.WriteLine();
 
 			Console.WriteLine(descriptionString);
