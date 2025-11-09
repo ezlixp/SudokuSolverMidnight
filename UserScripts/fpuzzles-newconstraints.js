@@ -11,7 +11,9 @@
 // @run-at       document-end
 // ==/UserScript==
 
-(function() {
+// util boolean to make smth fire only once
+let onetime = false;
+(function () {
     // Adding a new constraint:
     // 1. Add a new entry to the newConstraintInfo array
     // 2. If the type is not already supported, add it to the following:
@@ -168,10 +170,10 @@
             name: "Slow Thermometer",
             type: "line",
             // Colors for drawing the actual constraint:
-            outerColor: "#6495ED",      // CornflowerBlue (light mode)
-            outerColorDark: "#4682B4",  // SteelBlue (dark mode)
-            innerColor: "#B0E0E6",      // PowderBlue (light mode)
-            innerColorDark: "#87CEEB",  // SkyBlue (dark mode, but lighter than outer dark)
+            outerColor: "#6495ED", // CornflowerBlue (light mode)
+            outerColorDark: "#4682B4", // SteelBlue (dark mode)
+            innerColor: "#B0E0E6", // PowderBlue (light mode)
+            innerColorDark: "#87CEEB", // SkyBlue (dark mode, but lighter than outer dark)
             // lineWidths for drawing:
             outerLineWidth: 0.3,
             innerLineWidth: 0.12, // slightly thicker for better visibility
@@ -257,16 +259,81 @@
                 "Type to enter a total into the selected skyscraper (or the most recently edited one).",
             ],
         },
+        // Midnight
+        {
+            name: "Midnight Cells",
+            type: "bool",
+            tooltip: ["Cells that are marked as midnight cells have a value of twelve for midnight constraints."],
+        },
+        {
+            name: "Given Midnight",
+            type: "midnight",
+            tooltip: [
+                'For all the "midnight" type constraints, cells marked as',
+                "a midnight cell will have a value of 12.",
+                "",
+                "Click on a cell to place a given midnight cell.",
+                "Click on a midnight cell to remove it",
+            ],
+        },
+        {
+            name: "Midnight Sum",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight sum constraint",
+                "must have a sum of 12.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a midnight sum constraint.",
+                "Click on a midnight sum constraint to remove it.",
+            ],
+        },
+        {
+            name: "Midnight Product",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight product constraint",
+                "must have a product of 12.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a midnight product constraint.",
+                "Click on a midnight product constraint to remove it.",
+            ],
+        },
+        {
+            name: "Midnight Kropki Sequence",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight Kropki sequence constraint",
+                "must differ by 1.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a Kropki sequence constraint.",
+                "Click on a midnight Kropki sequence constraint to remove it.",
+            ],
+        },
+        {
+            name: "Midnight Kropki Ratio",
+            type: "between",
+            tooltip: [
+                "Numbers that appear in the cells across a midnight Kropki ratio constraint",
+                "must have a ratio of 1:2.",
+                "Midnight cells have a value of 12, no matter what it is marked as.",
+                "",
+                "Click on a cell border to place a Kropki ratio constraint.",
+                "Click on a midnight Kropki ratio constraint to remove it.",
+            ],
+        },
     ];
 
     // Drawing helpers
     // Outline code provided by Sven Neumann
-    const getOutline = function(cells, os) {
+    const getOutline = function (cells, os) {
         let edgePoints = [],
             grid = [],
             segs = [],
             shapes = [];
-        const checkRC = (r, c) => ((grid[r] !== undefined) && (grid[r][c] !== undefined)) || false;
+        const checkRC = (r, c) => (grid[r] !== undefined && grid[r][c] !== undefined) || false;
         const pointOS = {
             tl: [os, os],
             tr: [os, 1 - os],
@@ -278,44 +345,45 @@
             lc: [0.5, os],
         };
         const dirRC = { t: [-1, 0], r: [0, 1], b: [1, 0], l: [0, -1] };
-        const flipDir = { t: 'b', r: 'l', b: 't', l: 'r' };
+        const flipDir = { t: "b", r: "l", b: "t", l: "r" };
         const patterns = [
-            { name: 'otl', bits: '_0_011_1_', enter: 'bl', exit: 'rt', points: 'tl' },
-            { name: 'otr', bits: '_0_110_1_', enter: 'lt', exit: 'br', points: 'tr' },
-            { name: 'obr', bits: '_1_110_0_', enter: 'tr', exit: 'lb', points: 'br' },
-            { name: 'obl', bits: '_1_011_0_', enter: 'rb', exit: 'tl', points: 'bl' },
-            { name: 'itl', bits: '01_11____', enter: 'lt', exit: 'tl', points: 'tl' },
-            { name: 'itr', bits: '_10_11___', enter: 'tr', exit: 'rt', points: 'tr' },
-            { name: 'ibr', bits: '____11_10', enter: 'rb', exit: 'br', points: 'br' },
-            { name: 'ibl', bits: '___11_01_', enter: 'bl', exit: 'lb', points: 'bl' },
-            { name: 'et', bits: '_0_111___', enter: 'lt', exit: 'rt', points: 'tc' },
-            { name: 'er', bits: '_1__10_1_', enter: 'tr', exit: 'br', points: 'rc' },
-            { name: 'eb', bits: '___111_0_', enter: 'rb', exit: 'lb', points: 'bc' },
-            { name: 'el', bits: '_1_01__1_', enter: 'bl', exit: 'tl', points: 'lc' },
-            { name: 'out', bits: '_0_010_1_', enter: 'bl', exit: 'br', points: 'tl,tr' },
-            { name: 'our', bits: '_0_110_0_', enter: 'lt', exit: 'lb', points: 'tr,br' },
-            { name: 'oub', bits: '_1_010_0_', enter: 'tr', exit: 'tl', points: 'br,bl' },
-            { name: 'oul', bits: '_0_011_0_', enter: 'rb', exit: 'rt', points: 'bl,tl' },
-            { name: 'solo', bits: '_0_010_0_', enter: '', exit: '', points: 'tl,tr,br,bl' },
+            { name: "otl", bits: "_0_011_1_", enter: "bl", exit: "rt", points: "tl" },
+            { name: "otr", bits: "_0_110_1_", enter: "lt", exit: "br", points: "tr" },
+            { name: "obr", bits: "_1_110_0_", enter: "tr", exit: "lb", points: "br" },
+            { name: "obl", bits: "_1_011_0_", enter: "rb", exit: "tl", points: "bl" },
+            { name: "itl", bits: "01_11____", enter: "lt", exit: "tl", points: "tl" },
+            { name: "itr", bits: "_10_11___", enter: "tr", exit: "rt", points: "tr" },
+            { name: "ibr", bits: "____11_10", enter: "rb", exit: "br", points: "br" },
+            { name: "ibl", bits: "___11_01_", enter: "bl", exit: "lb", points: "bl" },
+            { name: "et", bits: "_0_111___", enter: "lt", exit: "rt", points: "tc" },
+            { name: "er", bits: "_1__10_1_", enter: "tr", exit: "br", points: "rc" },
+            { name: "eb", bits: "___111_0_", enter: "rb", exit: "lb", points: "bc" },
+            { name: "el", bits: "_1_01__1_", enter: "bl", exit: "tl", points: "lc" },
+            { name: "out", bits: "_0_010_1_", enter: "bl", exit: "br", points: "tl,tr" },
+            { name: "our", bits: "_0_110_0_", enter: "lt", exit: "lb", points: "tr,br" },
+            { name: "oub", bits: "_1_010_0_", enter: "tr", exit: "tl", points: "br,bl" },
+            { name: "oul", bits: "_0_011_0_", enter: "rb", exit: "rt", points: "bl,tl" },
+            { name: "solo", bits: "_0_010_0_", enter: "", exit: "", points: "tl,tr,br,bl" },
         ];
-        const checkPatterns = (row, col) => patterns
-            .filter(({ name, bits }) => {
+        const checkPatterns = (row, col) =>
+            patterns.filter(({ name, bits }) => {
                 let matches = true;
-                bits.split('').forEach((b, i) => {
+                bits.split("").forEach((b, i) => {
                     let r = row + Math.floor(i / 3) - 1,
-                        c = col + i % 3 - 1,
+                        c = col + (i % 3) - 1,
                         check = checkRC(r, c);
-                    matches = matches && ((b === '_') || (b === '1' && check) || (b === '0' && !check));
+                    matches = matches && (b === "_" || (b === "1" && check) || (b === "0" && !check));
                 });
                 return matches;
             });
-        const getSeg = (segs, rc, enter) => segs.find(([r, c, _, pat]) => r === rc[0] && c === rc[1] && pat.enter === enter);
-        const followShape = segs => {
+        const getSeg = (segs, rc, enter) =>
+            segs.find(([r, c, _, pat]) => r === rc[0] && c === rc[1] && pat.enter === enter);
+        const followShape = (segs) => {
             let shape = [],
                 seg = segs[0];
             const getNext = ([r, c, cell, pat]) => {
-                if (pat.exit === '') return;
-                let [exitDir, exitSide] = pat.exit.split('');
+                if (pat.exit === "") return;
+                let [exitDir, exitSide] = pat.exit.split("");
                 let nextRC = [r + dirRC[exitDir][0], c + dirRC[exitDir][1]];
                 let nextEnter = flipDir[exitDir] + exitSide;
                 return getSeg(segs, nextRC, nextEnter);
@@ -327,40 +395,42 @@
             } while (seg !== undefined && shape.indexOf(seg) === -1);
             return shape;
         };
-        const shapeToPoints = shape => {
+        const shapeToPoints = (shape) => {
             let points = [];
-            shape.forEach(([r, c, cell, pat]) => pat.points
-                .split(',')
-                .map(point => pointOS[point])
-                .map(([ros, cos]) => [r + ros, c + cos])
-                .forEach(rc => points.push(rc))
+            shape.forEach(([r, c, cell, pat]) =>
+                pat.points
+                    .split(",")
+                    .map((point) => pointOS[point])
+                    .map(([ros, cos]) => [r + ros, c + cos])
+                    .forEach((rc) => points.push(rc))
             );
             return points;
         };
-        cells.forEach(cell => {
+        cells.forEach((cell) => {
             const { i: col, j: row } = cell;
             grid[row] = grid[row] || [];
             grid[row][col] = { cell };
         });
-        cells.forEach(cell => {
-            const { i: col, j: row } = cell, matchedPatterns = checkPatterns(row, col);
-            matchedPatterns.forEach(pat => segs.push([row, col, cell, pat]));
+        cells.forEach((cell) => {
+            const { i: col, j: row } = cell,
+                matchedPatterns = checkPatterns(row, col);
+            matchedPatterns.forEach((pat) => segs.push([row, col, cell, pat]));
         });
         while (segs.length > 0) {
             const shape = followShape(segs);
             if (shape.length > 0) shapes.push(shape);
         }
-        shapes.forEach(shape => {
-            edgePoints = edgePoints.concat(shapeToPoints(shape).map(([r, c], idx) => [idx === 0 ? 'M' : 'L', r, c]));
-            edgePoints.push(['Z']);
+        shapes.forEach((shape) => {
+            edgePoints = edgePoints.concat(shapeToPoints(shape).map(([r, c], idx) => [idx === 0 ? "M" : "L", r, c]));
+            edgePoints.push(["Z"]);
         });
         return edgePoints;
     };
 
-    const drawLine = function(line, color, colorDark, lineWidth) {
+    const drawLine = function (line, color, colorDark, lineWidth) {
         ctx.lineWidth = cellSL * lineWidth * 0.5;
-        ctx.fillStyle = boolSettings['Dark Mode'] ? colorDark : color;
-        ctx.strokeStyle = boolSettings['Dark Mode'] ? colorDark : color;
+        ctx.fillStyle = boolSettings["Dark Mode"] ? colorDark : color;
+        ctx.strokeStyle = boolSettings["Dark Mode"] ? colorDark : color;
         ctx.beginPath();
         ctx.arc(line[0].x + cellSL / 2, line[0].y + cellSL / 2, ctx.lineWidth / 2, 0, Math.PI * 2);
         ctx.fill();
@@ -371,13 +441,19 @@
         }
         ctx.stroke();
         ctx.beginPath();
-        ctx.arc(line[line.length - 1].x + cellSL / 2, line[line.length - 1].y + cellSL / 2, ctx.lineWidth / 2, 0, Math.PI * 2);
+        ctx.arc(
+            line[line.length - 1].x + cellSL / 2,
+            line[line.length - 1].y + cellSL / 2,
+            ctx.lineWidth / 2,
+            0,
+            Math.PI * 2
+        );
         ctx.fill();
-    }
+    };
 
-    const drawSolidCage = function(cells, colorLight, colorDark) {
+    const drawSolidCage = function (cells, colorLight, colorDark) {
         if (cells.length === 0) return;
-        const color = boolSettings['Dark Mode'] ? colorDark : colorLight;
+        const color = boolSettings["Dark Mode"] ? colorDark : colorLight;
         const lineOffset = 1.0 / 32.0;
         const lineWidth = cellSL * lineOffset * 2.0;
         const outline = getOutline(cells, lineOffset);
@@ -388,9 +464,9 @@
         ctx.beginPath();
         for (let i = 0; i < outline.length; i++) {
             const point = outline[i];
-            if (point[0] === 'Z') {
+            if (point[0] === "Z") {
                 ctx.closePath();
-            } else if (point[0] == 'M') {
+            } else if (point[0] == "M") {
                 ctx.moveTo(gridX + point[1] * cellSL, gridY + point[2] * cellSL);
             } else {
                 ctx.lineTo(gridX + point[1] * cellSL, gridY + point[2] * cellSL);
@@ -403,17 +479,31 @@
 
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
-        ctx.lineCap = 'round';
-        ctx.globalAlpha = 1.00;
+        ctx.lineCap = "round";
+        ctx.globalAlpha = 1.0;
         ctx.stroke();
 
-        ctx.globalAlpha = 1.00;
+        ctx.globalAlpha = 1.0;
         ctx.strokeStyle = prevStrokeStyle;
         ctx.lineWidth = prevLineWidth;
         ctx.lineCap = prevLineCap;
-    }
+    };
 
-    const doShim = function() {
+    const drawDot = function (x, y, radius, value) {
+        ctx.lineWidth = lineWT;
+        ctx.fillStyle = "#000000";
+        ctx.strokeStyle = "#000000";
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#FA11AA";
+        ctx.font = cellSL * 0.5 + "px Arial";
+        ctx.fillText(value, x, y + cellSL * 0.2);
+    };
+
+    const doShim = function () {
         ("use strict");
 
         // Additional import/export data
@@ -432,7 +522,7 @@
                             puzzle.line = [];
                         }
                         for (let instance of puzzleEntry) {
-                             puzzle.line.push({
+                            puzzle.line.push({
                                 lines: instance.lines,
                                 outlineC: constraintInfo.exportLineColor || constraintInfo.color,
                                 width: constraintInfo.exportLineWidth || constraintInfo.lineWidth,
@@ -454,7 +544,8 @@
                                     fromConstraint: constraintInfo.name,
                                 });
 
-                                if (constraintInfo.endpoints === "circle") { // Only for Double Arrow type endpoints
+                                if (constraintInfo.endpoints === "circle") {
+                                    // Only for Double Arrow type endpoints
                                     const lastIndex = instance.lines[0].length - 1;
                                     puzzle.circle.push({
                                         cells: [instance.lines[0][lastIndex]],
@@ -484,7 +575,7 @@
                         }
 
                         for (let instance of puzzleEntry) {
-                             puzzle.text.push({
+                            puzzle.text.push({
                                 cells: [instance.cell],
                                 value: constraintInfo.symbol,
                                 fontC: "#000000",
@@ -499,6 +590,21 @@
                                 size: 0.7,
                                 fromConstraint: constraintInfo.name,
                             });
+                        }
+                    } else if (constraintInfo.type === "between") {
+                        if (!puzzle.dots) puzzle.dots = [];
+                        for (let instance of puzzleEntry) {
+                            puzzle.dots.push({
+                                cells: instance.cells,
+                                type: id,
+                            });
+                        }
+                    } else if (constraintInfo.type === "midnight") {
+                        {
+                            if (!puzzle.midnights) puzzle.midnights = [];
+                            for (let instance of puzzleEntry) {
+                                puzzle.midnights.push(instance);
+                            }
                         }
                     }
                 }
@@ -540,7 +646,14 @@
                 for (let line of puzzle.line) {
                     // Upgrade from old boolean
                     if (line.isNewConstraint) {
-                        line.fromConstraint = line.outlineC === "#C060C0" ? "Renban" : line.outlineC === "#67F067" ? "German Whispers" : line.outlineC === "#6495ED" ? "Slow Thermometer" : "Entropic";
+                        line.fromConstraint =
+                            line.outlineC === "#C060C0"
+                                ? "Renban"
+                                : line.outlineC === "#67F067"
+                                ? "German Whispers"
+                                : line.outlineC === "#6495ED"
+                                ? "Slow Thermometer"
+                                : "Entropic";
                         delete line.isNewConstraint;
                     }
 
@@ -627,8 +740,59 @@
                 delete puzzle.whispers;
             }
 
+            if (puzzle.dots) {
+                for (let dot of puzzle.dots) {
+                    puzzle[dot.type].push(new window[dot.type](dot.cells));
+                }
+            }
+
             string = compressor.compressToBase64(JSON.stringify(puzzle));
             origImportPuzzle(string, clearHistory);
+
+            if (puzzle.midnights) {
+                for (let midnight of puzzle.midnights) {
+                    grid[parseInt(midnight.cell.charAt(1)) - 1][parseInt(midnight.cell.charAt(3)) - 1].midnight = true;
+                    grid[parseInt(midnight.cell.charAt(1)) - 1][
+                        parseInt(midnight.cell.charAt(3)) - 1
+                    ].lockedmidnight = true;
+                }
+            }
+        };
+
+        // Ensure <= 9 given midnights
+        const origUseTool = useTool;
+        useTool = function (cell) {
+            origUseTool(cell);
+            if (cID(currentTool) === "givenmidnight") {
+                const cons = constraints[cID(currentTool)];
+                if (cons.length > 9) {
+                    cons.pop();
+                    alert("Cannot have more than 9 midnight cells.");
+                    return;
+                }
+                if (cons.length == 0 || cons[cons.length - 1].cell !== cell) {
+                    // This means the last tool use just removed a midnight cell
+                    cell.midnight = false;
+                    cell.lockedmidnight = false;
+                } else {
+                    for (let i = 0; i < 9; i++) {
+                        if (grid[i][cell.j].lockedmidnight || grid[cell.i][i].lockedmidnight) {
+                            cons.pop();
+                            alert("Cannot have multiple midnight cells in the same row/column.");
+                            return;
+                        }
+                    }
+                    for (let ccell of getCellsSeenByRegion(cell)) {
+                        if (ccell.lockedmidnight) {
+                            cons.pop();
+                            alert("Cannot have multiple midnight cells in the same region.");
+                            return;
+                        }
+                    }
+                    cell.midnight = true;
+                    cell.lockedmidnight = true;
+                }
+            }
         };
 
         // Draw the new constraints
@@ -693,7 +857,7 @@
                             }
                             if (minValue !== -1 && maxValue !== -1) {
                                 if (n - minValue > line.length - 1 || maxValue - n > line.length - 1) {
-                                     return false;
+                                    return false;
                                 }
                             }
                         }
@@ -738,7 +902,7 @@
                     for (let line of whispers.lines) {
                         const index = line.indexOf(cell);
                         if (index > -1) {
-                             if (n - whispersDiff <= 0 && n + whispersDiff > size) {
+                            if (n - whispersDiff <= 0 && n + whispersDiff > size) {
                                 return false;
                             }
 
@@ -864,10 +1028,10 @@
                                     const value = lineIndex === index ? n : lineCell.value;
                                     if (value) {
                                         currentSum += value;
-                                } else {
+                                    } else {
                                         currentIsComplete = false;
+                                    }
                                 }
-                            }
                                 lastRegion = region;
                             }
 
@@ -877,7 +1041,7 @@
                             }
 
                             if (completedSums.length > 1 && !completedSums.every((sum) => sum === completedSums[0])) {
-                                    return false;
+                                return false;
                             }
                         }
                     }
@@ -966,20 +1130,20 @@
                                         if (sum == -1) {
                                             sum = value0;
                                         } else if (sum != value0) {
-                                        return false;
-                                    }
+                                            return false;
+                                        }
                                     } else if (sum == -1) {
                                         sum = value0 + value1;
                                     } else if (sum != value0 + value1) {
-                                    return false;
+                                        return false;
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-            
+
             // Slow Thermometer
             const constraintsSlowThermo = constraints[cID("Slow Thermometer")];
             if (constraintsSlowThermo && constraintsSlowThermo.length > 0) {
@@ -992,8 +1156,9 @@
                                 const prevCell = line[index - 1];
                                 if (prevCell.value !== 0) {
                                     if (n < prevCell.value) return false;
-                                } else { // prevCell is unsolved
-                                    if (prevCell.candidates.every(pc => n < pc)) return false;
+                                } else {
+                                    // prevCell is unsolved
+                                    if (prevCell.candidates.every((pc) => n < pc)) return false;
                                 }
                             }
                             // Check against next cell
@@ -1001,8 +1166,9 @@
                                 const nextCell = line[index + 1];
                                 if (nextCell.value !== 0) {
                                     if (n > nextCell.value) return false;
-                                } else { // nextCell is unsolved
-                                    if (nextCell.candidates.every(nc => n > nc)) return false;
+                                } else {
+                                    // nextCell is unsolved
+                                    if (nextCell.candidates.every((nc) => n > nc)) return false;
                                 }
                             }
                         }
@@ -1010,48 +1176,56 @@
                 }
             }
 
-
             // Row Indexer
             const constraintsRowIndexer = constraints[cID("Row Indexer")];
-            if (constraintsRowIndexer && constraintsRowIndexer.some((rowIndexer) => rowIndexer.cells.indexOf(cell) > -1)) {
-                            let targetCell = grid[n - 1][cell.j];
-                            if (targetCell !== cell && targetCell.value) {
-                                if (targetCell.value > 0 && targetCell.value !== cell.i + 1) {
-                                    return false;
+            if (
+                constraintsRowIndexer &&
+                constraintsRowIndexer.some((rowIndexer) => rowIndexer.cells.indexOf(cell) > -1)
+            ) {
+                let targetCell = grid[n - 1][cell.j];
+                if (targetCell !== cell && targetCell.value) {
+                    if (targetCell.value > 0 && targetCell.value !== cell.i + 1) {
+                        return false;
                     }
                 }
             }
 
             // Column Indexer
             const constraintsColumnIndexer = constraints[cID("Column Indexer")];
-            if (constraintsColumnIndexer && constraintsColumnIndexer.some((columnIndexer) => columnIndexer.cells.indexOf(cell) > -1)) {
-                            let targetCell = grid[cell.i][n - 1];
-                            if (targetCell !== cell && targetCell.value) {
-                                if (targetCell.value > 0 && targetCell.value !== cell.j + 1) {
-                                    return false;
+            if (
+                constraintsColumnIndexer &&
+                constraintsColumnIndexer.some((columnIndexer) => columnIndexer.cells.indexOf(cell) > -1)
+            ) {
+                let targetCell = grid[cell.i][n - 1];
+                if (targetCell !== cell && targetCell.value) {
+                    if (targetCell.value > 0 && targetCell.value !== cell.j + 1) {
+                        return false;
                     }
                 }
             }
 
             // Box Indexer
             const constraintsBoxIndexer = constraints[cID("Box Indexer")];
-            if (constraintsBoxIndexer && constraintsBoxIndexer.some((boxIndexer) => boxIndexer.cells.indexOf(cell) > -1)) {
-                        let region = cell.region;
-                        if (region >= 0) {
-                            let regionCells = [];
+            if (
+                constraintsBoxIndexer &&
+                constraintsBoxIndexer.some((boxIndexer) => boxIndexer.cells.indexOf(cell) > -1)
+            ) {
+                let region = cell.region;
+                if (region >= 0) {
+                    let regionCells = [];
                     for (let i = 0; i < size; i++) {
                         for (let j = 0; j < size; j++) {
                             if (grid[i][j].region === region) {
                                 regionCells.push(grid[i][j]);
-                                    }
-                                }
                             }
+                        }
+                    }
                     if (regionCells.length == size) {
                         let cellRegionIndex = regionCells.indexOf(cell);
                         let targetCell = regionCells[n - 1];
-                                    if (targetCell !== cell && targetCell.value) {
+                        if (targetCell !== cell && targetCell.value) {
                             if (targetCell.value > 0 && targetCell.value !== cellRegionIndex + 1) {
-                                            return false;
+                                return false;
                             }
                         }
                     }
@@ -1160,6 +1334,80 @@
                 }
             }
 
+            // Given Midnight
+            if (constraints[cID("Midnight Cells")]) {
+                const constraintsGivenMidnight = constraints[cID("Given Midnight")];
+                if (constraintsGivenMidnight && constraintsGivenMidnight.length > 0) {
+                    if (cell.midnight) {
+                        for (let i = 0; i < constraintsGivenMidnight.length; i++)
+                            if (
+                                constraintsGivenMidnight[i].cell !== cell &&
+                                constraintsGivenMidnight[i].cell.value &&
+                                constraintsGivenMidnight[i].cell.value == n
+                            )
+                                return false;
+                    }
+                }
+            }
+
+            // Midnight Sum
+            const constraintsMidnightSum = constraints[cID("Midnight Sum")];
+            if (constraintsMidnightSum && constraintsMidnightSum.length > 0) {
+                for (let midnightSum of constraintsMidnightSum) {
+                    let index = midnightSum.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = midnightSum.cells[otherIndex].midnight
+                        ? 12
+                        : midnightSum.cells[otherIndex].value;
+                    if (otherValue && thisValue + otherValue != 12) return false;
+                }
+            }
+
+            const constraintsMidnightProduct = constraints[cID("Midnight Product")];
+            if (constraintsMidnightProduct && constraintsMidnightProduct.length > 0) {
+                for (let midnightProduct of constraintsMidnightProduct) {
+                    let index = midnightProduct.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = midnightProduct.cells[otherIndex].midnight
+                        ? 12
+                        : midnightProduct.cells[otherIndex].value;
+                    if (otherValue && thisValue * otherValue != 12) return false;
+                }
+            }
+
+            const constraintsKropkiSequence = constraints[cID("Midnight Kropki Sequence")];
+            if (constraintsKropkiSequence && constraintsKropkiSequence.length > 0) {
+                for (let kropkiSequence of constraintsKropkiSequence) {
+                    let index = kropkiSequence.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = kropkiSequence.cells[otherIndex].midnight
+                        ? 12
+                        : kropkiSequence.cells[otherIndex].value;
+                    if (otherValue && Math.abs(thisValue - otherValue) != 1) return false;
+                }
+            }
+
+            const constraintsKropkiRatio = constraints[cID("Midnight Kropki Ratio")];
+            if (constraintsKropkiRatio && constraintsKropkiRatio.length > 0) {
+                for (let kropkiRatio of constraintsKropkiRatio) {
+                    let index = kropkiRatio.cells.indexOf(cell);
+                    if (index == -1) continue;
+                    let otherIndex = (index + 1) % 2;
+                    const thisValue = cell.midnight ? 12 : n;
+                    const otherValue = kropkiRatio.cells[otherIndex].midnight
+                        ? 12
+                        : kropkiRatio.cells[otherIndex].value;
+                    if (otherValue && Math.max(thisValue, otherValue) / Math.min(thisValue, otherValue) != 2)
+                        return false;
+                }
+            }
+
             return true;
         };
 
@@ -1222,7 +1470,12 @@
             this.show = function () {
                 const entropicLineInfo = newConstraintInfo.filter((c) => c.name === "Entropic Line")[0];
                 for (var a = 0; a < this.lines.length; a++) {
-                    drawLine(this.lines[a], entropicLineInfo.color, entropicLineInfo.colorDark, entropicLineInfo.lineWidth);
+                    drawLine(
+                        this.lines[a],
+                        entropicLineInfo.color,
+                        entropicLineInfo.colorDark,
+                        entropicLineInfo.lineWidth
+                    );
                 }
             };
 
@@ -1238,7 +1491,12 @@
             this.show = function () {
                 const modularLineInfo = newConstraintInfo.filter((c) => c.name === "Modular Line")[0];
                 for (var a = 0; a < this.lines.length; a++) {
-                    drawLine(this.lines[a], modularLineInfo.color, modularLineInfo.colorDark, modularLineInfo.lineWidth);
+                    drawLine(
+                        this.lines[a],
+                        modularLineInfo.color,
+                        modularLineInfo.colorDark,
+                        modularLineInfo.lineWidth
+                    );
                 }
             };
 
@@ -1254,7 +1512,12 @@
             this.show = function () {
                 const regionSumLineInfo = newConstraintInfo.filter((c) => c.name === "Region Sum Line")[0];
                 for (var a = 0; a < this.lines.length; a++) {
-                    drawLine(this.lines[a], regionSumLineInfo.color, regionSumLineInfo.colorDark, regionSumLineInfo.lineWidth);
+                    drawLine(
+                        this.lines[a],
+                        regionSumLineInfo.color,
+                        regionSumLineInfo.colorDark,
+                        regionSumLineInfo.lineWidth
+                    );
                 }
             };
 
@@ -1292,13 +1555,24 @@
                     ctx.strokeStyle = doubleArrowColor;
                     ctx.beginPath();
                     ctx.moveTo(this.lines[i][0].x + cellSL / 2, this.lines[i][0].y + cellSL / 2);
-                    for (let j = 1; j < this.lines[i].length; j++) ctx.lineTo(this.lines[i][j].x + cellSL / 2, this.lines[i][j].y + cellSL / 2);
+                    for (let j = 1; j < this.lines[i].length; j++)
+                        ctx.lineTo(this.lines[i][j].x + cellSL / 2, this.lines[i][j].y + cellSL / 2);
                     ctx.stroke();
 
                     ctx.fillStyle = boolSettings["Dark Mode"] ? "#888888" : "#EAEAEA";
-                    for (let j = 0, k = 0; j < this.lines[i].length && (this.lines[i].length > 1 || !k); j += this.lines[i].length - 1, k++) {
-                    ctx.beginPath();
-                        ctx.arc(this.lines[i][j].x + cellSL / 2, this.lines[i][j].y + cellSL / 2, cellSL / 2 - ctx.lineWidth / 2, 0, Math.PI * 2);
+                    for (
+                        let j = 0, k = 0;
+                        j < this.lines[i].length && (this.lines[i].length > 1 || !k);
+                        j += this.lines[i].length - 1, k++
+                    ) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            this.lines[i][j].x + cellSL / 2,
+                            this.lines[i][j].y + cellSL / 2,
+                            cellSL / 2 - ctx.lineWidth / 2,
+                            0,
+                            Math.PI * 2
+                        );
                         ctx.fill();
                         ctx.stroke();
                     }
@@ -1333,25 +1607,44 @@
 
             this.show = function () {
                 const thermoInfo = newConstraintInfo.filter((c) => c.name === "Slow Thermometer")[0];
-                for (let i = 0; i < 2; i++) { // Two passes for double line
+                for (let i = 0; i < 2; i++) {
+                    // Two passes for double line
                     for (let a = 0; a < this.lines.length; a++) {
                         const currentLine = this.lines[a];
                         if (currentLine.length === 0) continue;
 
                         ctx.lineWidth = cellSL * (i ? thermoInfo.innerLineWidth : thermoInfo.outerLineWidth);
-                        const bulbRadiusFactor = i ? thermoInfo.innerBulbRadiusFactor : thermoInfo.outerBulbRadiusFactor;
-                        
-                        if (i) { // Inner line color
-                            ctx.fillStyle = boolSettings['Dark Mode'] ? thermoInfo.innerColorDark : thermoInfo.innerColor;
-                            ctx.strokeStyle = boolSettings['Dark Mode'] ? thermoInfo.innerColorDark : thermoInfo.innerColor;
-                        } else { // Outer line color
-                            ctx.fillStyle = boolSettings['Dark Mode'] ? thermoInfo.outerColorDark : thermoInfo.outerColor;
-                            ctx.strokeStyle = boolSettings['Dark Mode'] ? thermoInfo.outerColorDark : thermoInfo.outerColor;
+                        const bulbRadiusFactor = i
+                            ? thermoInfo.innerBulbRadiusFactor
+                            : thermoInfo.outerBulbRadiusFactor;
+
+                        if (i) {
+                            // Inner line color
+                            ctx.fillStyle = boolSettings["Dark Mode"]
+                                ? thermoInfo.innerColorDark
+                                : thermoInfo.innerColor;
+                            ctx.strokeStyle = boolSettings["Dark Mode"]
+                                ? thermoInfo.innerColorDark
+                                : thermoInfo.innerColor;
+                        } else {
+                            // Outer line color
+                            ctx.fillStyle = boolSettings["Dark Mode"]
+                                ? thermoInfo.outerColorDark
+                                : thermoInfo.outerColor;
+                            ctx.strokeStyle = boolSettings["Dark Mode"]
+                                ? thermoInfo.outerColorDark
+                                : thermoInfo.outerColor;
                         }
-                        
+
                         // Bulb
                         ctx.beginPath();
-                        ctx.arc(currentLine[0].x + cellSL / 2, currentLine[0].y + cellSL / 2, cellSL * bulbRadiusFactor, 0, Math.PI * 2);
+                        ctx.arc(
+                            currentLine[0].x + cellSL / 2,
+                            currentLine[0].y + cellSL / 2,
+                            cellSL * bulbRadiusFactor,
+                            0,
+                            Math.PI * 2
+                        );
                         ctx.fill();
 
                         // Line
@@ -1364,7 +1657,13 @@
                             ctx.stroke();
                             // End cap for the line itself (not a second bulb)
                             ctx.beginPath();
-                            ctx.arc(currentLine[currentLine.length - 1].x + cellSL / 2, currentLine[currentLine.length - 1].y + cellSL / 2, ctx.lineWidth / 2, 0, Math.PI * 2);
+                            ctx.arc(
+                                currentLine[currentLine.length - 1].x + cellSL / 2,
+                                currentLine[currentLine.length - 1].y + cellSL / 2,
+                                ctx.lineWidth / 2,
+                                0,
+                                Math.PI * 2
+                            );
                             ctx.fill();
                         }
                     }
@@ -1375,7 +1674,6 @@
                 this.lines[this.lines.length - 1].push(cell);
             };
         };
-
 
         // Row Indexer
         window.rowindexer = function (cell) {
@@ -1538,6 +1836,108 @@
             };
         };
 
+        // Midnight Stuff:
+
+        // Given Midnight
+        window.givenmidnight = function (cell) {
+            if (cell) {
+                this.cell = cell[0];
+            }
+
+            this.show = function () {
+                ctx.lineWidth = lineWT;
+                ctx.fillStyle = "#FFFFFF";
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.fillRect(this.cell.x, this.cell.y, cellSL, cellSL);
+                ctx.fill;
+                const colour = constraints[cID("Midnight Cells")] ? "rgba(85, 31, 233, 0.25)" : "rgba(0, 0, 0, 0.25)";
+                this.cell.midnight = constraints[cID("Midnight Cells")];
+                ctx.fillStyle = colour;
+                ctx.strokeStyle = "#000000";
+                ctx.fillRect(this.cell.x, this.cell.y, cellSL, cellSL);
+            };
+        };
+
+        //Midnight Sum
+        window.midnightsum = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "+";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
+        // Midnight Product
+        window.midnightproduct = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "x";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
+        // Midnight Kropki Sequence
+        window.midnightkropkisequence = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "s";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
+        // Midnight Kropki Ratio
+        window.midnightkropkiratio = function (nearestCells) {
+            if (nearestCells) {
+                this.cells = nearestCells;
+            }
+            this.value = "r";
+
+            this.x = function () {
+                return (this.cells[0].x + this.cells[1].x) / 2 + cellSL / 2;
+            };
+
+            this.y = function () {
+                return (this.cells[0].y + this.cells[1].y) / 2 + cellSL / 2;
+            };
+
+            this.show = function () {
+                drawDot(this.x(), this.y(), cellSL * 0.1555, this.value);
+            };
+        };
+
         const origCategorizeTools = categorizeTools;
         categorizeTools = function () {
             origCategorizeTools();
@@ -1550,18 +1950,18 @@
                 const name_cID = cID(info.name);
                 if (info.type === "line") {
                     if (!toolConstraints.includes(info.name)) {
-                         // Adjust indices if inserting before them
+                        // Adjust indices if inserting before them
                         if (toolLineIndex < toolPerCellIndex) toolPerCellIndex++;
                         if (toolLineIndex < toolOutsideIndex) toolOutsideIndex++;
                         toolConstraints.splice(++toolLineIndex, 0, info.name);
                     }
                     if (!lineConstraints.includes(info.name)) lineConstraints.push(info.name);
                 } else if (info.type === "cage") {
-                     if (!toolConstraints.includes(info.name)) {
+                    if (!toolConstraints.includes(info.name)) {
                         if (toolPerCellIndex < toolLineIndex) toolLineIndex++;
                         if (toolPerCellIndex < toolOutsideIndex) toolOutsideIndex++;
                         toolConstraints.splice(++toolPerCellIndex, 0, info.name);
-                     }
+                    }
                     if (!regionConstraints.includes(info.name)) regionConstraints.push(info.name);
                 } else if (info.type === "outside") {
                     if (!toolConstraints.includes(info.name)) {
@@ -1571,11 +1971,30 @@
                     }
                     if (!outsideConstraints.includes(info.name)) outsideConstraints.push(info.name);
                     if (!typableConstraints.includes(info.name)) typableConstraints.push(info.name);
+                } else if (info.type === "midnight") {
+                    if (!toolConstraints.includes(info.name)) toolConstraints.push(info.name);
+                    if (!perCellConstraints.includes(info.name)) perCellConstraints.push(info.name);
+                } else if (info.type === "between") {
+                    // between should only include extra midnight constraints, so simply insert at the end
+                    if (!toolConstraints.includes(info.name)) toolConstraints.push(info.name);
+                    if (!borderConstraints.includes(info.name)) borderConstraints.push(info.name);
+                } else if (info.type == "bool") {
+                    if (!boolConstraints.includes(info.name)) boolConstraints.push(info.name);
                 }
             }
 
             draggableConstraints = [...new Set([...lineConstraints, ...regionConstraints])];
-            multicellConstraints = [...new Set([...lineConstraints, ...regionConstraints, ...borderConstraints, ...cornerConstraints, ...perCellConstraints.filter(name => newConstraintInfo.find(info => info.name === name && info.type === "cage"))])]; // Add cage-type to multicell
+            multicellConstraints = [
+                ...new Set([
+                    ...lineConstraints,
+                    ...regionConstraints,
+                    ...borderConstraints,
+                    ...cornerConstraints,
+                    ...perCellConstraints.filter((name) =>
+                        newConstraintInfo.find((info) => info.name === name && info.type === "cage")
+                    ),
+                ]),
+            ]; // Add cage-type to multicell
             betweenCellConstraints = [...borderConstraints, ...cornerConstraints]; // cage-type are not between cells
             allConstraints = [...boolConstraints, ...toolConstraints];
 
@@ -1586,8 +2005,13 @@
             diagonalRegionTools = [...diagonalRegionConstraints, ...diagonalRegionCosmetics];
             outsideTools = [...outsideConstraints, ...outsideCosmetics];
             outsideCornerTools = [...outsideCornerConstraints, ...outsideCornerCosmetics];
-             // Add new cage-type perCell to oneCellAtATime
-            oneCellAtATimeTools = [...perCellConstraints, ...draggableConstraints, ...draggableCosmetics, ...newConstraintInfo.filter(info => info.type === "cage").map(info => info.name)];
+            // Add new cage-type perCell to oneCellAtATime
+            oneCellAtATimeTools = [
+                ...perCellConstraints,
+                ...draggableConstraints,
+                ...draggableCosmetics,
+                ...newConstraintInfo.filter((info) => info.type === "cage").map((info) => info.name),
+            ];
             draggableTools = [...draggableConstraints, ...draggableCosmetics];
             multicellTools = [...multicellConstraints, ...multicellCosmetics];
         };
@@ -1608,7 +2032,10 @@
                 title = customTitle;
             } else {
                 if (size !== 9) title += size + "x" + size + " ";
-                if (getCells().some((a) => a.region !== Math.floor(a.i / regionH) * regionH + Math.floor(a.j / regionW))) title += "Irregular ";
+                if (
+                    getCells().some((a) => a.region !== Math.floor(a.i / regionH) * regionH + Math.floor(a.j / regionW))
+                )
+                    title += "Irregular ";
                 if (constraints[cID("Extra Region")].length) title += "Extra-Region ";
                 if (constraints[cID("Odd")].length && !constraints[cID("Even")].length) title += "Odd ";
                 if (!constraints[cID("Odd")].length && constraints[cID("Even")].length) title += "Even ";
@@ -1616,7 +2043,10 @@
                 if (constraints[cID("Diagonal +")] !== constraints[cID("Diagonal -")]) title += "Single-Diagonal ";
                 if (
                     constraints[cID("Nonconsecutive")] &&
-                    !(constraints[cID("Difference")].length && constraints[cID("Difference")].some((a) => ["", "1"].includes(a.value))) &&
+                    !(
+                        constraints[cID("Difference")].length &&
+                        constraints[cID("Difference")].some((a) => ["", "1"].includes(a.value))
+                    ) &&
                     !constraints[cID("Ratio")].negative
                 )
                     title += "Nonconsecutive ";
@@ -1676,7 +2106,8 @@
                 if (ctx.measureText(title).width > canvas.width - 711) title = "Extreme Variant Sudoku";
             }
 
-            buttons[buttons.findIndex((a) => a.id === "EditInfo")].x = canvas.width / 2 + ctx.measureText(title).width / 2 + 40;
+            buttons[buttons.findIndex((a) => a.id === "EditInfo")].x =
+                canvas.width / 2 + ctx.measureText(title).width / 2 + 40;
 
             return title;
         };
@@ -1691,33 +2122,34 @@
                 const x = gridX - (sidebarDist + sidebarW / 2);
                 const baseX = x + sidebarW;
                 const baseY = gridY + buttonGap;
-                const columnWidth = buttonMargin + buttonW + buttonGap + buttonSH + buttonGap + buttonSH + buttonMargin;
+                const columnWidth =
+                    buttonMargin + buttonW + buttonGap + buttonSH + buttonGap + buttonSH + buttonMargin - 50;
                 let constraintButtons = sidebars[0].buttons;
                 let currentX = baseX;
                 let currentY = gridY + buttonGap;
                 for (let i = 0; i < constraintButtons.length; i++) {
                     let button = constraintButtons[i];
                     if (button.modes.indexOf("Constraint Tools") > -1 && button.title !== "-") {
-                    button.x = currentX;
-                    button.y = currentY;
-                    button.w = buttonW;
-                    button.h = buttonSH;
+                        button.x = currentX;
+                        button.y = currentY;
+                        button.w = buttonW;
+                        button.h = buttonSH;
 
                         if (i + 1 < constraintButtons.length) {
                             let bm = constraintButtons[i + 1];
                             if (bm.title === "-") {
                                 bm.x = currentX + buttonW / 2 + buttonGap + buttonSH / 2;
                                 bm.y = currentY;
-                    }
+                            }
                         }
 
                         if (i < constraintButtons.length - 1) {
-                     currentY += buttonSH + buttonGap;
-                     if (currentY + buttonSH + buttonGap > gridY + gridSL) {
-                         currentY = baseY;
-                         currentX += columnWidth;
-                     }
-                }
+                            currentY += buttonSH + buttonGap;
+                            if (currentY + buttonSH + buttonGap > gridY + gridSL) {
+                                currentY = baseY;
+                                currentX += columnWidth;
+                            }
+                        }
                     }
                 }
 
@@ -1745,9 +2177,11 @@
 
                 const hoveredButton =
                     sidebars[sidebars.findIndex((a) => a.title === "Constraints")].buttons[
-                        sidebars[sidebars.findIndex((a) => a.title === "Constraints")].buttons.findIndex((a) => a.id === "ConstraintTools")
+                        sidebars[sidebars.findIndex((a) => a.title === "Constraints")].buttons.findIndex(
+                            (a) => a.id === "ConstraintTools"
+                        )
                     ];
-                     if (
+                if (
                     (mouseX < hoveredButton.x - hoveredButton.w / 2 - buttonMargin ||
                         mouseX > hoveredButton.x + hoveredButton.w / 2 + buttonMargin ||
                         mouseY < hoveredButton.y - buttonMargin ||
@@ -1756,9 +2190,9 @@
                         mouseX > gridX - sidebarDist + constraintSidebarWidth ||
                         mouseY < gridY ||
                         mouseY > gridY + gridSL)
-                    ) {
-                        closePopups();
-                    }
+                ) {
+                    closePopups();
+                }
             } else {
                 prevonmousemove(e);
             }
@@ -1772,16 +2206,18 @@
                 buttons.push(prevButtons[i]);
             }
         }
-    } // end of doShim
+    }; // end of doShim
 
     let intervalId = setInterval(() => {
-        if (typeof grid === 'undefined' ||
-            typeof exportPuzzle === 'undefined' ||
-            typeof importPuzzle === 'undefined' ||
-            typeof drawConstraints === 'undefined' ||
-            typeof candidatePossibleInCell === 'undefined' ||
-            typeof categorizeTools === 'undefined' ||
-            typeof drawPopups === 'undefined') {
+        if (
+            typeof grid === "undefined" ||
+            typeof exportPuzzle === "undefined" ||
+            typeof importPuzzle === "undefined" ||
+            typeof drawConstraints === "undefined" ||
+            typeof candidatePossibleInCell === "undefined" ||
+            typeof categorizeTools === "undefined" ||
+            typeof drawPopups === "undefined"
+        ) {
             return;
         }
 
@@ -1789,3 +2225,4 @@
         doShim();
     }, 16);
 })();
+

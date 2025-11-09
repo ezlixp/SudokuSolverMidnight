@@ -1,4 +1,6 @@
 ﻿using SudokuSolver;
+using SudokuSolver.Constraints;
+using SudokuSolver.Constraints.Helpers.Midnight_Custom;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -46,6 +48,7 @@ internal class SolvedResponse(int nonce) : BaseResponse(nonce, "solved")
 internal class CountResponse(int nonce) : BaseResponse(nonce, "count")
 {
     public long count { get; set; }
+    public long uniqueMidnight { get; set; }
     public bool inProgress { get; set; }
 }
 
@@ -57,6 +60,10 @@ internal class EstimateResponse(int nonce) : BaseResponse(nonce, "estimate")
     public double ci95_lower { get; set; }
     public double ci95_upper { get; set; }
     public double relErrPercent { get; set; }
+}
+internal class MidnightSpotsResponse(int nonce) : BaseResponse(nonce, "midnightspots")
+{
+    public string message { get; set; }
 }
 
 internal class ResponseCacheItem
@@ -87,6 +94,7 @@ internal class LogicalResponse(int nonce) : BaseResponse(nonce, "logical")
 [JsonSerializable(typeof(CountResponse))]
 [JsonSerializable(typeof(LogicalResponse))]
 [JsonSerializable(typeof(EstimateResponse))]
+[JsonSerializable(typeof(MidnightSpotsResponse))]
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
@@ -176,8 +184,8 @@ internal class WebsocketListener : IDisposable
                             onlyGivens = true;
                             break;
                     }
-
                     Solver solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
+
                     if (message.command == "truecandidates")
                     {
                         if (solver.customInfo.TryGetValue("ComparableData", out object comparableDataObj) && comparableDataObj is byte[] comparableData)
@@ -218,6 +226,9 @@ internal class WebsocketListener : IDisposable
                         case "step":
                             SendStep(ipPort, message.nonce, solver, cancellationToken);
                             break;
+                        case "midnightspots":
+                            SendMidnightSpots(ipPort, message.nonce, solver, cancellationToken);
+                            break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -252,6 +263,7 @@ internal class WebsocketListener : IDisposable
             CountResponse countResponse => JsonSerializer.Serialize(countResponse, WebsocketsJsonContext.Default.CountResponse),
             LogicalResponse logicalResponse => JsonSerializer.Serialize(logicalResponse, WebsocketsJsonContext.Default.LogicalResponse),
             EstimateResponse estimateResponse => JsonSerializer.Serialize(estimateResponse, WebsocketsJsonContext.Default.EstimateResponse),
+            MidnightSpotsResponse midnightSpotsResponse => JsonSerializer.Serialize(midnightSpotsResponse, WebsocketsJsonContext.Default.MidnightSpotsResponse),
             _ => throw new NotImplementedException($"Unknown response type: {response.type}"),
         };
         lock (serverLock)
@@ -474,20 +486,21 @@ internal class WebsocketListener : IDisposable
         {
             SendMessage(ipPort, new SolvedResponse(nonce)
             {
-                solution = solver.FlatBoard.Select(SolverUtility.GetValue).ToArray()
+                solution = MidnightCellHelper.applyMidnight(solver.FlatBoard.Select(SolverUtility.GetValue).ToArray())
             });
         }
     }
 
     private void SendCount(string ipPort, int nonce, Solver solver, long maxSolutions, CancellationToken cancellationToken)
     {
-        long numSolutions = solver.CountSolutions(maxSolutions, multiThread: !singleThreaded, cancellationToken: cancellationToken, progressEvent: (count) =>
+        (var numSolutions, var uniqueMidnight) = solver.CountSolutions(maxSolutions, multiThread: !singleThreaded, cancellationToken: cancellationToken, progressEvent: (pair) =>
         {
-            SendMessage(ipPort, new CountResponse(nonce) { count = count, inProgress = true });
+            (var count, var uniqueMidnight) = pair;
+            SendMessage(ipPort, new CountResponse(nonce) { count = count, uniqueMidnight = uniqueMidnight, inProgress = true });
         });
         if (!cancellationToken.IsCancellationRequested)
         {
-            SendMessage(ipPort, new CountResponse(nonce) { count = numSolutions, inProgress = false });
+            SendMessage(ipPort, new CountResponse(nonce) { count = numSolutions, uniqueMidnight = uniqueMidnight, inProgress = false });
         }
     }
 
@@ -610,6 +623,23 @@ internal class WebsocketListener : IDisposable
             },
             multiThread: !singleThreaded,
             cancellationToken: cancellationToken);
+    }
+
+    private void SendMidnightSpots(string ipPort, int nonce, Solver solver, CancellationToken cancellationToken)
+    {
+        if (!solver.Constraints<MidnightCellsToggleConstraint>().Any() || !solver.customInfo.TryGetValue("fpuzzlesdata", out var data))
+        {
+            SendMessage(ipPort, new InvalidResponse(nonce) { message = "This is not a midnight puzzle." });
+        }
+        else
+        {
+            MidnightCellHelper.Init(data.ToString());
+
+            SendMessage(ipPort, new MidnightSpotsResponse(nonce)
+            {
+                message = "There are naively " + MidnightCellHelper.num + " possible starting orientations for midnight cells (no midnight cells next to midnight sums or kropki sequences)."
+            });
+        }
     }
 
     public void Dispose()

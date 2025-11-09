@@ -108,7 +108,7 @@ static internal class TestUtility
     private static void TestUniqueSolutionImpl(this Solver solver, string expectedSolution, bool multiThread)
     {
         Solver solver1 = solver.Clone(willRunNonSinglesLogic: false);
-        long solutionCount = solver1.CountSolutions(multiThread: multiThread);
+        (long solutionCount, var uniqueMidnights) = solver1.CountSolutions(multiThread: multiThread);
         Assert.AreEqual(1u, solutionCount, $"Solution count not unique ({solutionCount}) for  {solver.Title} by {solver.Author} ({solver.ToGivenString()})");
 
         Solver solver2 = solver.Clone(willRunNonSinglesLogic: false);
@@ -138,7 +138,7 @@ static internal class TestUtility
     private static void TestInvalidSolutionImpl(this Solver solver, bool multiThread)
     {
         Solver solver1 = solver.Clone(willRunNonSinglesLogic: false);
-        long solutionCount = solver1.CountSolutions(multiThread: multiThread);
+        (long solutionCount, long uniqueMidnights) = solver1.CountSolutions(multiThread: multiThread);
         Assert.AreEqual(0, solutionCount, $"Expected 0 solutions but found {solutionCount} solutions for invalid puzzle: {solver.Title} by {solver.Author} ({solver.ToGivenString()})");
 
         Solver solver2 = solver.Clone(willRunNonSinglesLogic: false);
@@ -158,7 +158,7 @@ static internal class TestUtility
     private static void TestMultipleSolutionImpl(this Solver solver, bool multiThread)
     {
         Solver solver1 = solver.Clone(willRunNonSinglesLogic: false);
-        long solutionCount = solver1.CountSolutions(multiThread: multiThread);
+        (long solutionCount, long uniqueMidnights) = solver1.CountSolutions(multiThread: multiThread);
         Assert.IsTrue(solutionCount > 1, $"Expected multiple solutions but found {solutionCount} solution(s) for puzzle:  {solver.Title} by {solver.Author} ({solver.ToGivenString()})");
 
         Solver solver2 = solver.Clone(willRunNonSinglesLogic: false);

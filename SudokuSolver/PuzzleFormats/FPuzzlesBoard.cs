@@ -29,6 +29,7 @@ public class FPuzzlesBoard
     public bool antiking { get; set; }
     public bool disjointgroups { get; set; }
     public bool nonconsecutive { get; set; }
+    public bool midnightcells { get; set; }
     public string[] negative { get; set; }
     public FPuzzlesArrowEntry[] arrow { get; set; }
     public FPuzzlesKillerCageEntry[] killercage { get; set; }
@@ -62,6 +63,10 @@ public class FPuzzlesBoard
     public FPuzzlesLines[] doublearrow { get; set; }
     public FPuzzlesLines[] zipperline { get; set; }
     public FPuzzlesLines[] slowthermometer { get; set; }
+    public FPuzzlesCells[] midnightkropkiratio { get; set; }
+    public FPuzzlesCells[] midnightkropkisequence { get; set; }
+    public FPuzzlesCells[] midnightproduct { get; set; }
+    public FPuzzlesCells[] midnightsum { get; set; }
     public string[] disabledlogic { get; set; } = null;
     public string[] truecandidatesoptions { get; set; } = null;
 };

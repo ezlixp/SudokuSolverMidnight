@@ -1,4 +1,9 @@
-﻿using System;
+﻿using LZStringCSharp;
+using SudokuSolver.Constraints;
+using SudokuSolver.Constraints.Helpers.Midnight_Custom;
+using SudokuSolver.Constraints.Midnight_Custom;
+using SudokuSolver.PuzzleFormats;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,9 +11,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using LZStringCSharp;
-using SudokuSolver.Constraints;
-using SudokuSolver.PuzzleFormats;
 using static SudokuSolver.SolverUtility;
 
 namespace SudokuSolver
@@ -451,6 +453,10 @@ namespace SudokuSolver
             if (fpuzzlesData.disjointgroups)
             {
                 solver.AddConstraint(typeof(DisjointConstraintGroup), string.Empty);
+            }
+            if (fpuzzlesData.midnightcells)
+            {
+                solver.AddConstraint(typeof(MidnightCellsToggleConstraint), string.Empty);
             }
 
             // Marked constraints
@@ -1000,27 +1006,93 @@ namespace SudokuSolver
                 }
             }
 
+            StringBuilder midnights = new();
+            for (int i0 = 0; i0 < height; i0++)
+            {
+                for (int j0 = 0; j0 < width; j0++)
+                {
+                    if (i0 < 9 && j0 < 9 && MidnightCellHelper.isMidnight[i0, j0])
+                    {
+                        midnights.Append("r" + (i0 + 1) + "c" + (j0 + 1));
+                    }
+                }
+            }
+            if (midnights.ToString().Length > 0 && solver.Constraints<MidnightCellsToggleConstraint>().Any())
+            {
+                solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
+            }
+
+            if (fpuzzlesData.midnightkropkiratio != null)
+            {
+                foreach (var midnightkropkiratio in fpuzzlesData.midnightkropkiratio)
+                {
+                    solver.AddConstraint(typeof(MidnightKropkiRatioConstraint), ToOptions(midnightkropkiratio.cells));
+                }
+            }
+
+
+            if (fpuzzlesData.midnightkropkisequence != null)
+            {
+                foreach (var midnightkropkisequence in fpuzzlesData.midnightkropkisequence)
+                {
+                    solver.AddConstraint(typeof(MidnightKropkiSequenceConstraint), ToOptions(midnightkropkisequence.cells));
+                }
+            }
+
+            if (fpuzzlesData.midnightproduct != null)
+            {
+                foreach (var midnightproduct in fpuzzlesData.midnightproduct)
+                {
+                    solver.AddConstraint(typeof(MidnightProductConstraint), ToOptions(midnightproduct.cells));
+                }
+            }
+
+            if (fpuzzlesData.midnightsum != null)
+            {
+                foreach (var midnightsum in fpuzzlesData.midnightsum)
+                {
+                    solver.AddConstraint(typeof(MidnightSumConstraint), ToOptions(midnightsum.cells));
+                }
+            }
+
+
             // Apply any command-line constraints
             if (additionalConstraints != null)
             {
                 ApplyConstraints(solver, additionalConstraints);
             }
 
+            if (!fpuzzlesData.midnightcells)
+            {
+
+                return FinalizeFPuzzles(solver, fpuzzlesData, comparableDataStream, comparableData, onlyGivens);
+            }
+            else
+            {
+                return solver;
+            }
+        }
+
+        public static Solver FinalizeFPuzzles(Solver solver, FPuzzlesBoard fpuzzlesData, MemoryStream comparableDataStream, BinaryWriter comparableData, bool onlyGivens = false)
+        {
+
             if (!solver.FinalizeConstraints())
             {
                 throw new ArgumentException("ERROR: The constraints are invalid (no solutions).");
             }
 
+            int height = fpuzzlesData.grid.Length;
+            int width = fpuzzlesData.grid[0].Length;
             bool[,] isOriginalGiven = new bool[height, width];
             solver.customInfo["Givens"] = isOriginalGiven;
 
             uint[,] originalCenterMarks = !onlyGivens ? new uint[height, width] : null;
             solver.customInfo["OriginalCenterMarks"] = originalCenterMarks;
 
-            i = 0;
+            int i = 0;
             foreach (var row in fpuzzlesData.grid)
             {
-                j = 0;
+                int j = 0;
                 foreach (var val in row)
                 {
                     if (!onlyGivens)
@@ -1294,7 +1366,8 @@ namespace SudokuSolver
             foreach (var c in solver.Constraints<WhispersConstraint>())
             {
                 string[] cells = c.cells.Select(CN).ToArray();
-                whispers.Add(new() {
+                whispers.Add(new()
+                {
                     lines = [cells],
                     value = c.difference.ToString(),
                 });
@@ -1434,6 +1507,7 @@ namespace SudokuSolver
 
             static T[] ToArray<T>(List<T> list) => list.Count > 0 ? list.ToArray() : null;
 
+            // TODO: add midnight constraints here
             FPuzzlesBoard fp = new()
             {
                 size = solver.WIDTH,

@@ -1,0 +1,7 @@
+in the future should implement solverfactory to fpuzzles url for the new constraints
+
+comparable data is only used for cache key
+right now it is not implemented properly for midnight puzzles as the information from first part of create from fpu zzles is not added to the key
+if someone were to impelment true candidates in the future for midnight puzzles, this would probably need to be added to the keyfor performance
+
+impl count and check

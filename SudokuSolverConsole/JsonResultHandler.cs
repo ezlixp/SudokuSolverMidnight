@@ -204,17 +204,17 @@ public static class JsonResultHandler
         {
             solutionEvent = (Solver s) => solutions.Add(s.GivenString);
         }
-        Action<long> progressEvent = null;
+        Action<(long, long)> progressEvent = null;
         if (program.JsonProgress)
         {
-            progressEvent = (long c) => OutputJson(new SolutionProgressResult
+            progressEvent = (pair) => OutputJson(new SolutionProgressResult
             {
-                count = c,
+                count = pair.Item1,
                 timestamp = DateTime.UtcNow,
                 duration = stopwatch.Elapsed.TotalSeconds
             });
         }
-        count = solver.CountSolutions(
+        (count, var uniqueMidnight) = solver.CountSolutions(
             maxSolutions: program.Check ? 2 : program.MaxSolutionCount,
             multiThread: program.MultiThread,
             progressEvent: progressEvent,
@@ -256,7 +256,7 @@ public static class JsonResultHandler
         Action<long[]> progressEvent = null;
         if (program.JsonProgress)
         {
-            progressEvent = (long[] curCounts) => 
+            progressEvent = (long[] curCounts) =>
             {
                 UpdateBoardFromCandidateCounts(solver, curCounts);
                 OutputJson(new TrueCandidatesProgressResult
@@ -275,7 +275,7 @@ public static class JsonResultHandler
             cancellationToken: cancellationToken);
         stopwatch.Stop();
         DateTime finish = DateTime.UtcNow;
-        
+
         UpdateBoardFromCandidateCounts(solver, trueCandidateCounts);
         OutputJson(new TrueCandidatesResult
         {
@@ -297,7 +297,7 @@ public static class JsonResultHandler
             List<LogicalStepDesc> stepDescs = [];
             string beforeState = solver.OutputString;
             LogicResult result = solver.StepLogic(stepDescs, cancellationToken);
-            
+
             if (result == LogicResult.None || result == LogicResult.PuzzleComplete)
             {
                 break;
@@ -337,7 +337,7 @@ public static class JsonResultHandler
             multiThread: program.MultiThread,
             cancellationToken: cancellationToken,
             isRandom: program.SolveRandomBruteForce);
-        
+
         stopwatch.Stop();
         DateTime finish = DateTime.UtcNow;
         OutputJson(new BruteForceSolveResult

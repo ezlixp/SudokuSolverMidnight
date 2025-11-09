@@ -64,10 +64,10 @@ public abstract class OrthogonalValueConstraint : Constraint
     public Dictionary<(int, int, int, int), int> Markers => markers;
 
 
-    private static readonly Regex negRegex = new(@"neg(\d*)");
-    private static readonly Regex twoCellsRegex = new(@"(\d*)r(\d+)c(\d+)r(\d+)c(\d+)");
-    private static readonly Regex sharedRowRegex = new(@"(\d*)r(\d+)[,-](\d+)c(\d+)");
-    private static readonly Regex sharedColRegex = new(@"(\d*)r(\d+)c(\d+)[,-](\d+)");
+    protected static readonly Regex negRegex = new(@"neg(\d*)");
+    protected static readonly Regex twoCellsRegex = new(@"(\d*)r(\d+)c(\d+)r(\d+)c(\d+)");
+    protected static readonly Regex sharedRowRegex = new(@"(\d*)r(\d+)[,-](\d+)c(\d+)");
+    protected static readonly Regex sharedColRegex = new(@"(\d*)r(\d+)c(\d+)[,-](\d+)");
 
     public OrthogonalValueConstraint(Solver sudokuSolver, string options) : base(sudokuSolver, options)
     {
@@ -180,7 +180,7 @@ public abstract class OrthogonalValueConstraint : Constraint
         return clearValuesNegative;
     }
 
-    private void initClearValuesPositiveByMarker(IEnumerable<int> markerValues)
+    protected virtual void initClearValuesPositiveByMarker(IEnumerable<int> markerValues)
     {
         foreach (int markerValue in markerValues)
         {
