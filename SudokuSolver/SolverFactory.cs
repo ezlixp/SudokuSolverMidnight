@@ -1017,7 +1017,7 @@ namespace SudokuSolver
                     }
                 }
             }
-            if (midnights.ToString().Length > 0)
+            if (midnights.ToString().Length > 0 && solver.Constraints<MidnightCellsToggleConstraint>().Any())
             {
                 solver.AddConstraint(typeof(MidnightCellsConstraint), midnights.ToString());
             }
