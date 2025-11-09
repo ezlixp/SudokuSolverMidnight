@@ -63,12 +63,18 @@ public static class MidnightCellHelper
     {
         int idx = 0;
         for (int i = 0; i < 9; i++)
+        {
             for (int j = 0; j < 9; j++)
             {
                 if (isMidnight[i, j])
+                {
                     flattenedCells[idx] ^= 1 << 10;
+                }
                 ++idx;
             }
+        }
+
+
         return flattenedCells;
     }
     public static bool NextMidnight()
@@ -89,7 +95,7 @@ public static class MidnightCellHelper
         string fpuzzlesJson = LZString.DecompressFromBase64(messageData);
         var fpuzzlesData = JsonSerializer.Deserialize(fpuzzlesJson, FpuzzlesJsonContext.Default.FPuzzlesBoard);
         curIdx = 0;
-        if (initialized && messageData != lastStartingData)
+        if (initialized && messageData == lastStartingData)
         {
             return;
         }
@@ -103,22 +109,28 @@ public static class MidnightCellHelper
                 allowed[r, c] = true;
             }
         }
-        foreach (var kropkiSequence in fpuzzlesData.midnightkropkisequence)
+        if (fpuzzlesData.midnightkropkisequence != null)
         {
-            foreach (var cell in kropkiSequence.cells)
+            foreach (var kropkiSequence in fpuzzlesData.midnightkropkisequence)
             {
-                int row = int.Parse(cell[1].ToString()) - 1;
-                int column = int.Parse(cell[3].ToString()) - 1;
-                allowed[row, column] = false;
+                foreach (var cell in kropkiSequence.cells)
+                {
+                    int row = int.Parse(cell[1].ToString()) - 1;
+                    int column = int.Parse(cell[3].ToString()) - 1;
+                    allowed[row, column] = false;
+                }
             }
         }
-        foreach (var sum in fpuzzlesData.midnightsum)
+        if (fpuzzlesData.midnightsum != null)
         {
-            foreach (var cell in sum.cells)
+            foreach (var sum in fpuzzlesData.midnightsum)
             {
-                int row = int.Parse(cell[1].ToString()) - 1;
-                int column = int.Parse(cell[3].ToString()) - 1;
-                allowed[row, column] = false;
+                foreach (var cell in sum.cells)
+                {
+                    int row = int.Parse(cell[1].ToString()) - 1;
+                    int column = int.Parse(cell[3].ToString()) - 1;
+                    allowed[row, column] = false;
+                }
             }
         }
 

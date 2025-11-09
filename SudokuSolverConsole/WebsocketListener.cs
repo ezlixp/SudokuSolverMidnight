@@ -47,6 +47,7 @@ internal class SolvedResponse(int nonce) : BaseResponse(nonce, "solved")
 internal class CountResponse(int nonce) : BaseResponse(nonce, "count")
 {
     public long count { get; set; }
+    public long uniqueMidnight { get; set; }
     public bool inProgress { get; set; }
 }
 
@@ -177,9 +178,7 @@ internal class WebsocketListener : IDisposable
                             onlyGivens = true;
                             break;
                     }
-                    Solver solver;
-                    solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
-
+                    Solver solver = SolverFactory.CreateFromFPuzzles(message.data, additionalConstraints, onlyGivens: onlyGivens);
 
                     if (message.command == "truecandidates")
                     {
@@ -484,13 +483,14 @@ internal class WebsocketListener : IDisposable
 
     private void SendCount(string ipPort, int nonce, Solver solver, long maxSolutions, CancellationToken cancellationToken)
     {
-        long numSolutions = solver.CountSolutions(maxSolutions, multiThread: !singleThreaded, cancellationToken: cancellationToken, progressEvent: (count) =>
+        (var numSolutions, var uniqueMidnight) = solver.CountSolutions(maxSolutions, multiThread: !singleThreaded, cancellationToken: cancellationToken, progressEvent: (pair) =>
         {
-            SendMessage(ipPort, new CountResponse(nonce) { count = count, inProgress = true });
+            (var count, var uniqueMidnight) = pair;
+            SendMessage(ipPort, new CountResponse(nonce) { count = count, uniqueMidnight = uniqueMidnight, inProgress = true });
         });
         if (!cancellationToken.IsCancellationRequested)
         {
-            SendMessage(ipPort, new CountResponse(nonce) { count = numSolutions, inProgress = false });
+            SendMessage(ipPort, new CountResponse(nonce) { count = numSolutions, uniqueMidnight = uniqueMidnight, inProgress = false });
         }
     }
 

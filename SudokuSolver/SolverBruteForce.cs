@@ -22,7 +22,6 @@ public partial class Solver
         {
             if (customInfo.TryGetValue("fpuzzlesdata", out var data))
             {
-                // simply recreate solvers from fpuzzles data and send solve here
                 MidnightCellHelper.Init(data.ToString());
                 do
                 {
@@ -238,7 +237,59 @@ public partial class Solver
     /// <param name="progressEvent">An event to receive the progress count as solutions are found.</param>
     /// <param name="cancellationToken">Pass in to support cancelling the count.</param>
     /// <returns>The solution count found.</returns>
-    public long CountSolutions(long maxSolutions = 0, bool multiThread = false, Action<long> progressEvent = null, Action<Solver> solutionEvent = null, CancellationToken cancellationToken = default)
+    public (long, long) CountSolutions(long maxSolutions = 0, bool multiThread = false, Action<(long, long)> progressEvent = null, Action<Solver> solutionEvent = null, CancellationToken cancellationToken = default)
+    {
+        if (Constraints<MidnightCellsToggleConstraint>().Any())
+        {
+            long curSols = 0;
+            long uniqueMidnight = 0;
+            if (customInfo.TryGetValue("fpuzzlesdata", out var data))
+            {
+                MidnightCellHelper.Init(data.ToString());
+                do
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Solver solver = SolverFactory.CreateFromFPuzzles(data.ToString());
+
+                    try
+                    {
+                        MemoryStream stream = new();
+                        BinaryWriter writer = new(stream);
+                        string fpuzzlesURL = data.ToString();
+                        if (fpuzzlesURL.Contains("?load="))
+                        {
+                            int trimStart = fpuzzlesURL.IndexOf("?load=") + "?load=".Length;
+                            fpuzzlesURL = fpuzzlesURL[trimStart..];
+                        }
+                        string fpuzzlesJson = LZString.DecompressFromBase64(fpuzzlesURL);
+                        var fpuzzlesData = JsonSerializer.Deserialize(fpuzzlesJson, FpuzzlesJsonContext.Default.FPuzzlesBoard);
+
+                        solver = SolverFactory.FinalizeFPuzzles(solver, fpuzzlesData, stream, writer);
+                    }
+                    catch { continue; }
+
+                    long newSols = solver.CountSolutionsInternalWrapper(maxSolutions, curSols, uniqueMidnight, multiThread, progressEvent, solutionEvent, cancellationToken);
+                    if (newSols > 0)
+                    {
+                        curSols += newSols;
+                        ++uniqueMidnight;
+                        progressEvent.Invoke((curSols, uniqueMidnight));
+                    }
+                } while (MidnightCellHelper.NextMidnight());
+                return (curSols, uniqueMidnight);
+            }
+            else
+            {
+                return (0, 0);
+            }
+        }
+        else
+        {
+            return (CountSolutionsInternalWrapper(maxSolutions, 0, 0, multiThread, progressEvent, solutionEvent, cancellationToken), 0);
+        }
+    }
+
+    private long CountSolutionsInternalWrapper(long maxSolutions, long prevSols, long uniqueMidnight, bool multiThread, Action<(long, long)> progressEvent = null, Action<Solver> solutionEvent = null, CancellationToken cancellationToken = default)
     {
         if (seenMap == null)
         {
@@ -248,7 +299,7 @@ public partial class Solver
         // Any negative count is treated as infinite
         maxSolutions = Math.Max(maxSolutions, 0);
 
-        using CountSolutionsState state = new(maxSolutions, multiThread, progressEvent, solutionEvent, cancellationToken);
+        using CountSolutionsState state = new(maxSolutions, prevSols, uniqueMidnight, multiThread, progressEvent, solutionEvent, cancellationToken);
         try
         {
             Solver boardCopy = Clone(willRunNonSinglesLogic: true);
@@ -278,9 +329,11 @@ public partial class Solver
     private class CountSolutionsState : IDisposable
     {
         public long numSolutions = 0;
+        public long prevSols = 0;
+        public long uniqueMidnight = 0;
         public readonly bool multiThread;
         public readonly long maxSolutions;
-        public readonly Action<long> progressEvent;
+        public readonly Action<(long, long)> progressEvent;
         public readonly Action<Solver> solutionEvent;
         public readonly CancellationToken cancellationToken;
         public readonly CountdownEvent countdownEvent;
@@ -291,9 +344,11 @@ public partial class Solver
         private int numRunningTasks = 0;
         private readonly int maxRunningTasks;
 
-        public CountSolutionsState(long maxSolutions, bool multiThread, Action<long> progressEvent, Action<Solver> solutionEvent, CancellationToken cancellationToken)
+        public CountSolutionsState(long maxSolutions, long prevSols, long uniqueMidnight, bool multiThread, Action<(long, long)> progressEvent, Action<Solver> solutionEvent, CancellationToken cancellationToken)
         {
             this.maxSolutions = maxSolutions;
+            this.prevSols = prevSols;
+            this.uniqueMidnight = uniqueMidnight;
             this.multiThread = multiThread;
             this.progressEvent = progressEvent;
             this.solutionEvent = solutionEvent;
@@ -309,7 +364,7 @@ public partial class Solver
         public void IncrementSolutions(Solver solver)
         {
             long newNumSolutions = Interlocked.Increment(ref numSolutions);
-            if (maxSolutions > 0 && newNumSolutions >= maxSolutions)
+            if (maxSolutions > 0 && newNumSolutions + prevSols >= maxSolutions)
             {
                 MaxSolutionsReached = true;
                 return;
@@ -322,7 +377,7 @@ public partial class Solver
                     solutionEvent?.Invoke(solver);
                     if (eventTimer.ElapsedMilliseconds > 500)
                     {
-                        progressEvent?.Invoke(numSolutions);
+                        progressEvent?.Invoke((numSolutions + prevSols, uniqueMidnight));
                         eventTimer.Restart();
                     }
                 }
@@ -913,7 +968,7 @@ public partial class Solver
                 if (remaining <= tinyBranchThreshold)
                 {
                     // exact enumeration for tiny branch
-                    long exactCnt = childSolver.CountSolutions(cancellationToken: state.cancellationToken);
+                    (var exactCnt, var uniqueMidnight) = childSolver.CountSolutions(cancellationToken: state.cancellationToken);
                     exactSum += exactCnt;
                     continue;
                 }
