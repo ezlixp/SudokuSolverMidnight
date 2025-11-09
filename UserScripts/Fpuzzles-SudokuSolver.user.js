@@ -443,7 +443,7 @@
                 }
                 if (midnightSpotsButton) {
                     let indexMS = consoleSidebar.buttons.indexOf(midnightSpotsButton);
-                    if (indexMS > -1) consoleSidebar.buttons.splice(indexMC, 1);
+                    if (indexMS > -1) consoleSidebar.buttons.splice(indexMS, 1);
                 }
 
                 // Revert layout to initial state
